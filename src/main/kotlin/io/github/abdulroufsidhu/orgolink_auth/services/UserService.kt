@@ -29,6 +29,45 @@ class UserService(
 
     fun findById(id: UUID?) = id?.let { userRep.findByIdOrNull(it) }
 
+    fun delete(
+        request: HttpServletRequest,
+        userDetails: OrgoUserPrincipal?
+    ): ResponseEntity<out ValidResponseData<Nothing>?> {
+        if (userDetails == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                ValidResponseData(
+                    message = "Invalid Token",
+                    data = null
+                ),
+            )
+
+        val authHeader = request.getHeader("Authorization")
+        val jwt = authHeader?.substring(7)
+
+        val response: ResponseEntity<ValidResponseData<Nothing>> = run {
+            val isValid = tokenService.isTokenValid(jwt!!, userDetails)
+            if (isValid) {
+                userDetails.id?.let { userRep.deleteById(it) }
+                ResponseEntity.ok().body(
+                    ValidResponseData(
+                        message = "Token is valid",
+                        data = null
+                    )
+                )
+            } else {
+                ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                    ValidResponseData(
+                        message = "Invalid Token",
+                        data = null
+                    )
+                )
+            }
+        }
+
+
+        return response;
+    }
+
     fun createUser(user: LoginOrCreateUserRequestDTO): ResponseEntity<ValidResponseData<String>> {
         if (userRep.existsByUsername(user.username))
             throw UsernameAlreadyExists("Username already exists")

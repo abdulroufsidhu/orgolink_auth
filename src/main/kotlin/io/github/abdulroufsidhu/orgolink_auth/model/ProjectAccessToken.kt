@@ -11,13 +11,25 @@ import java.util.UUID
 @Entity
 @Table(name = "project_access_tokens")
 class ProjectAccessToken(
-    @Column(nullable = false, unique = true, length = 500) var token: String? = null,
-    @Column(nullable = false) var expiresAt: Date? = null,
-    @Column(nullable = false) var isRevoked: Boolean = false,
-    @Column(name = "project_id", nullable = false) var projectId: UUID,
-    @Column(name = "user_id", nullable = false) var userId: UUID,
+    @Column(nullable = false, unique = true, length = 500) 
+    var token: String? = null,
+    
+    @Column(nullable = false) 
+    var expiresAt: Date? = null,
+    
+    @Column(nullable = false) 
+    var isRevoked: Boolean = false,
+    
+    @Column(name = "project_id", nullable = false) 
+    var projectId: UUID? = null,
+    
+    @Column(name = "user_id", nullable = false) 
+    var userId: UUID? = null,
+    
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     var role: ProjectRole = ProjectRole.USER,
-    @Column(length = 255) var description: String? = null,
+    
+    @Column(length = 255) 
+    var description: String? = null,
 ) : BaseTable()

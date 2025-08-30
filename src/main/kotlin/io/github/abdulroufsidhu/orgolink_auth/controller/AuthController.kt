@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -47,4 +48,10 @@ class AuthController(private val userService: UserService) {
           request: HttpServletRequest,
           @AuthenticationPrincipal userDetails: OrgoUserPrincipal?
   ): ResponseEntity<ValidResponseData<Nothing>> = userService.verify(request, userDetails)
+
+    @DeleteMapping("/auth/delete")
+    fun delete(
+        request: HttpServletRequest,
+        @AuthenticationPrincipal userDetails: OrgoUserPrincipal?
+    ) = userService.delete(request, userDetails)
 }

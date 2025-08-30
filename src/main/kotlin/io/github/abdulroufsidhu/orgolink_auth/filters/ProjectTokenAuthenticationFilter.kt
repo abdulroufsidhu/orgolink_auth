@@ -43,7 +43,7 @@ class ProjectTokenAuthenticationFilter(
 
         if (projectToken != null && SecurityContextHolder.getContext().authentication == null) {
             try {
-                val user = userRepo.findById(projectToken.userId).orElse(null)
+                val user = projectToken.userId?.let { userRepo.findById(it).orElse(null) }
                 val userDetails = userDetailsService.loadUserByUsername(user?.username)
 
                 if (userDetails is OrgoUserPrincipal) {
@@ -55,7 +55,7 @@ class ProjectTokenAuthenticationFilter(
 
                     // Create enhanced user principal with project context
                     val enhancedUserPrincipal =
-                        ProjectUserPrincipal(userDetails, projectToken.projectId, projectToken.role)
+                        projectToken.projectId?.let { ProjectUserPrincipal(userDetails, it, projectToken.role) }
 
                     val authToken =
                         UsernamePasswordAuthenticationToken(

@@ -92,8 +92,8 @@ class ProjectTokenService(
 
             val savedToken = projectAccessTokenRepo.save(projectAccessToken)
 
-            val project = projectRepo.findById(savedToken.projectId).orElse(null)
-            val user = userRepo.findById(savedToken.userId).orElse(null)
+            val project = projectRepo.findById(savedToken.projectId!!).orElse(null)
+            val user = userRepo.findById(savedToken.userId!!).orElse(null)
 
             return ResponseEntity.ok(
                 ValidResponseData(
@@ -134,7 +134,7 @@ class ProjectTokenService(
         val tokens = projectAccessTokenRepo.findByProjectIdAndIsRevokedFalse(project.id!!)
         val tokenDTOs =
             tokens.map {
-                val user = userRepo.findById(it.userId).orElse(null)
+                val user = userRepo.findById(it.userId!!).orElse(null)
                 ProjectTokenResponseDTO.from(it, project, user.username)
             }
 
@@ -212,8 +212,8 @@ class ProjectTokenService(
     ): ResponseEntity<ValidResponseData<List<ProjectTokenResponseDTO>>> {
         val tokens = projectAccessTokenRepo.findValidTokensByUserId(userPrincipal.id!!)
         val tokenDTOs = tokens.map {
-            val project = projectRepo.findById(it.projectId).orElse(null)
-            val user = userRepo.findById(it.userId).orElse(null)
+            val project = projectRepo.findById(it.projectId!!).orElse(null)
+            val user = userRepo.findById(it.userId!!).orElse(null)
             ProjectTokenResponseDTO.from(it, project, user.username)
         }
 
