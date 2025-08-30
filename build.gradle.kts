@@ -36,6 +36,7 @@ dependencies {
   testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
   implementation("org.postgresql:postgresql:42.7.7")
+  testImplementation("com.h2database:h2")
 }
 
 kotlin { compilerOptions { freeCompilerArgs.addAll("-Xjsr305=strict") } }
