@@ -43,3 +43,13 @@ kotlin { compilerOptions { freeCompilerArgs.addAll("-Xjsr305=strict") } }
 
 tasks.withType<Test> { useJUnitPlatform() }
 
+tasks.test {
+    useJUnitPlatform()
+    systemProperty("spring.profiles.active", "test")
+}
+
+
+tasks.named("bootRun") {
+    dependsOn("test")
+}
+

@@ -1,83 +1,63 @@
 package io.github.abdulroufsidhu.orgolink_auth.controller
 
+import io.github.abdulroufsidhu.orgolink_auth.TestUtils
 import io.github.abdulroufsidhu.orgolink_auth.dto.ValidResponseData
-import io.github.abdulroufsidhu.orgolink_auth.dto.requestdto.LoginOrCreateUserRequestDTO
-import io.github.abdulroufsidhu.orgolink_auth.services.UserService
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.client.TestRestTemplate
-import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.http.*
 import org.springframework.test.context.ActiveProfiles
 import org.junit.jupiter.api.Assertions.*
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.MethodOrderer
+import org.junit.jupiter.api.TestMethodOrder
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
+import org.springframework.boot.test.web.server.LocalServerPort
+import org.springframework.boot.web.client.RestTemplateBuilder
 import org.springframework.core.ParameterizedTypeReference
+import org.springframework.core.annotation.Order
 import org.springframework.test.context.TestPropertySource
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.AUTO_CONFIGURED)
 @TestPropertySource(properties = [
     "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration"
 ])
-class AuthControllerTest {
+@TestMethodOrder(MethodOrderer.OrderAnnotation::class)
+class AuthControllerTest(
+) {
 
-//    @LocalServerPort
-    private var port: Int = 8080
+    @LocalServerPort
+private var port: Int = 0
 
-    @Autowired
-    private lateinit var restTemplate: TestRestTemplate
+private lateinit var restTemplate: TestRestTemplate
 
-    private fun getBaseUrl() = "http://localhost:$port"
+    private lateinit var token: String
 
-    // Test for securedThankYou endpoint
-    @Test
-    fun `securedThankYou should return session id`() {
-        val url = getBaseUrl() + "/";
-        println(url)
-        val response = restTemplate.getForEntity(url, String::class.java)
-        
-        assertEquals(HttpStatus.OK, response.statusCode)
-        assertNotNull(response.body)
+    @BeforeEach
+fun setUp() {
+        // Reconfigure restTemplate with the right port
+        this.restTemplate = TestRestTemplate(RestTemplateBuilder().rootUri("http://localhost:$port"))
+
     }
-
-    fun loginUser() : ValidResponseData<*>? {
-        val requestDto = LoginOrCreateUserRequestDTO(
-            username = "testuser",
-            password = "Password123!"
-        )
-        val headers = HttpHeaders()
-        headers.contentType = MediaType.APPLICATION_JSON
-        val request = HttpEntity(requestDto, headers)
-
-        val response: ResponseEntity<ValidResponseData<*>> =
-            restTemplate.exchange(
-                getBaseUrl() + "/auth/login",
-                HttpMethod.POST,
-                HttpEntity(request),
-                object : ParameterizedTypeReference<ValidResponseData<*>>() {}
-            )
-
-        assertEquals(HttpStatus.OK, response.statusCode)
-        return response.body
+fun loginUser(){
+        TestUtils.authenticatedTest(restTemplate) {
+        }
     }
 
     fun verify() {
-        loginUser()?.data?.let {
+        TestUtils.authenticatedTest(restTemplate) { token ->
 
-            val headers = HttpHeaders()
-            headers.contentType = MediaType.APPLICATION_JSON
-            headers["Authentication"] = "Bearer $it"
-            val request = HttpEntity(headers.toMap())
+            val headers = TestUtils.getAuthHeader(token)
+            val request = HttpEntity(null, headers)
 
             val response: ResponseEntity<ValidResponseData<Nothing>> =
                 restTemplate.exchange(
-                    getBaseUrl() + "/auth/verify",
+                    "/auth/verify",
                     HttpMethod.GET,
-                    HttpEntity(request),
+                    request,
                     object : ParameterizedTypeReference<ValidResponseData<Nothing>>() {}
                 )
 
@@ -86,25 +66,47 @@ class AuthControllerTest {
 
     }
 
-
-
-
     // Test for register endpoint - Success case
     @Test
+    @Order(1)
     fun `register`() {
-        createUser()
+        TestUtils.authenticatedTest(restTemplate) {}
     }
+
+
 
     // Test for login endpoint - Success case
     @Test
+    @Order(2)
     fun `login`() {
         loginUser()
     }
 
     // Test for login endpoint - Invalid credentials
     @Test
+    @Order(3)
     fun `verify logged in user`() {
         verify()
+    }
+
+    @Test
+    @Order(4)
+    fun `securedThankYou should return session id`() {
+        TestUtils.authenticatedTest(restTemplate) { token ->
+            val headers = TestUtils.getAuthHeader(token)
+            val request = HttpEntity(null, headers)
+
+            val response: ResponseEntity<String> =
+                restTemplate.exchange(
+                    "/",
+                    HttpMethod.GET,
+                    request,
+                    String::class.java
+                )
+
+            assertEquals(HttpStatus.OK, response.statusCode)
+            assertNotNull(response.body)
+        }
     }
 
 }

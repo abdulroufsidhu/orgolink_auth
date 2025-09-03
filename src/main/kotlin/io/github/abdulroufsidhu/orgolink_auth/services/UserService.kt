@@ -50,7 +50,7 @@ class UserService(
                 userDetails.id?.let { userRep.deleteById(it) }
                 ResponseEntity.ok().body(
                     ValidResponseData(
-                        message = "Token is valid",
+                        message = "User deleted successfully",
                         data = null
                     )
                 )
