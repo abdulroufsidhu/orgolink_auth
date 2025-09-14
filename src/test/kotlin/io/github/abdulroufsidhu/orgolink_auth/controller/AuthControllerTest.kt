@@ -22,27 +22,30 @@ import org.springframework.test.context.TestPropertySource
 @ActiveProfiles("test")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.AUTO_CONFIGURED)
-@TestPropertySource(properties = [
-    "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration"
-])
+@TestPropertySource(
+    properties = [
+        "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration"
+    ]
+)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class AuthControllerTest(
 ) {
-
     @LocalServerPort
-private var port: Int = 0
+    private var port: Int = 0
 
-private lateinit var restTemplate: TestRestTemplate
+    private lateinit var restTemplate: TestRestTemplate
 
     private lateinit var token: String
 
     @BeforeEach
-fun setUp() {
+    fun setUp() {
         // Reconfigure restTemplate with the right port
-        this.restTemplate = TestRestTemplate(RestTemplateBuilder().rootUri("http://localhost:$port"))
+        this.restTemplate =
+            TestRestTemplate(RestTemplateBuilder().rootUri("http://localhost:$port"))
 
     }
-fun loginUser(){
+
+    fun loginUser() {
         TestUtils.authenticatedTest(restTemplate) {
         }
     }
@@ -72,7 +75,6 @@ fun loginUser(){
     fun `register`() {
         TestUtils.authenticatedTest(restTemplate) {}
     }
-
 
 
     // Test for login endpoint - Success case

@@ -352,6 +352,39 @@ class ProjectService(
         }
     }
 
+    fun deletePermanent(
+        projectKey: String,
+        userPrincipal: OrgoUserPrincipal
+    ): ResponseEntity<ValidResponseData<Nothing>> {
+        val project =
+            projectRepo.findByProjectKey(projectKey) ?: return ResponseEntity.notFound().build()
+
+        // Check if user is owner
+        val userRole = projectUserRepo.findActiveProjectUser(userPrincipal.id!!, project.id!!)
+        if (userRole?.role != ProjectRole.OWNER) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ValidResponseData(message = "Only owners can delete projects", data = null))
+        }
+
+        try {
+            project.id?.let {
+                projectRepo.deleteById(it)
+            }
+
+            return ResponseEntity.ok(
+                ValidResponseData(message = "Project deleted successfully", data = null)
+            )
+        } catch (e: Exception) {
+            return ResponseEntity.internalServerError()
+                .body(
+                    ValidResponseData(
+                        message = "Failed to delete project: ${e.message}",
+                        data = null
+                    )
+                )
+        }
+    }
+
     fun deleteProject(
         projectKey: String,
         userPrincipal: OrgoUserPrincipal
