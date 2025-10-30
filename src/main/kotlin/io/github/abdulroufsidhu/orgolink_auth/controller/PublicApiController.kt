@@ -9,6 +9,7 @@ import io.github.abdulroufsidhu.orgolink_auth.services.UserService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
+import kotlinx.coroutines.runBlocking
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -27,8 +28,8 @@ class PublicApiController(
         summary = "Get all public projects",
         description = "Retrieves all publicly available projects"
     )
-    suspend fun getPublicProjects(): ResponseEntity<ValidResponseData<List<ProjectResponseDTO>>> {
-        return projectService.getPublicProjects()
+     fun getPublicProjects(): ResponseEntity<ValidResponseData<List<ProjectResponseDTO>>> = runBlocking{
+         projectService.getPublicProjects()
     }
 
     @GetMapping("/projects/{projectKey}")
@@ -36,20 +37,19 @@ class PublicApiController(
         summary = "Get public project by key",
         description = "Retrieves a public project by its key"
     )
-    suspend fun getPublicProject(
+     fun getPublicProject(
         @Parameter(description = "Project key") @PathVariable projectKey: String
-    ): ResponseEntity<ValidResponseData<ProjectResponseDTO>> {
+    ): ResponseEntity<ValidResponseData<ProjectResponseDTO>> = runBlocking{
         val response = projectService.getProjectByKey(projectKey)
 
-        // Only return if project is public
         if (response.statusCode == HttpStatus.OK) {
             val project = response.body?.data
             if (project?.isPublic == true) {
-                return response
+                return@runBlocking response
             }
         }
 
-        return ResponseEntity.notFound().build()
+        return@runBlocking ResponseEntity.notFound().build()
     }
 
     @PostMapping("/projects/{projectKey}/validate-token")
@@ -57,10 +57,10 @@ class PublicApiController(
         summary = "Validate project access token",
         description = "Validates a project access token and returns project information if valid"
     )
-    suspend fun validateProjectToken(
+     fun validateProjectToken(
         @Parameter(description = "Project key") @PathVariable projectKey: String,
         @RequestBody tokenRequest: TokenValidationRequest
-    ): ResponseEntity<ValidResponseData<ProjectTokenValidationResponse>> {
+    ): ResponseEntity<ValidResponseData<ProjectTokenValidationResponse>> = runBlocking{
         val projectToken = projectTokenService.validateProjectToken(tokenRequest.token)
 
         val project: Project? = projectService.findById(projectToken?.projectId)
@@ -79,10 +79,10 @@ class PublicApiController(
                     expiresAt = projectToken.expiresAt
                 )
 
-            return ResponseEntity.ok(ValidResponseData(message = "Token is valid", data = response))
+            return@runBlocking ResponseEntity.ok(ValidResponseData(message = "Token is valid", data = response))
         }
 
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+        return@runBlocking ResponseEntity.status(HttpStatus.UNAUTHORIZED)
             .body(
                 ValidResponseData(
                     message = "Invalid or expired token",
@@ -93,8 +93,8 @@ class PublicApiController(
 
     @GetMapping("/health")
     @Operation(summary = "Health check", description = "Simple health check endpoint")
-    suspend fun healthCheck(): ResponseEntity<ValidResponseData<String>> {
-        return ResponseEntity.ok(ValidResponseData(message = "Service is running", data = "OK"))
+     fun healthCheck(): ResponseEntity<ValidResponseData<String>> = runBlocking{
+         ResponseEntity.ok(ValidResponseData(message = "Service is running", data = "OK"))
     }
 }
 

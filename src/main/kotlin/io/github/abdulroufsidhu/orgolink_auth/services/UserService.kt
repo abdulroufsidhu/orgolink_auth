@@ -72,6 +72,7 @@ class UserService(
 
     suspend fun createUser(user: LoginOrCreateUserRequestDTO): ResponseEntity<ValidResponseData<String>> =
         withContext(Dispatchers.IO) {
+            print("inside create user")
             if (userRep.existsByUsername(user.username))
                 throw UsernameAlreadyExists("Username already exists")
             val incommingPassword = user.password

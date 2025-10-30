@@ -33,9 +33,6 @@ class TokenService(
     @Value("\${jwt.secret}") private val secretKey: String,
     @Value("\${jwt.expiration}") private val jwtExpiration: Long,
 ) {
-
-    private val textHasher = BCryptPasswordEncoder(12)
-
     suspend fun generateToken(userDetails: UserDetails): String = withContext(Dispatchers.Default) {
         val now = Date()
         val expirationDate = Date(now.time + jwtExpiration)

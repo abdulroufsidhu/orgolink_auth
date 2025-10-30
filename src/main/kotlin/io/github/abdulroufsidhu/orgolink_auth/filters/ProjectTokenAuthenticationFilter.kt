@@ -5,7 +5,6 @@ import io.github.abdulroufsidhu.orgolink_auth.model.ProjectRole
 import io.github.abdulroufsidhu.orgolink_auth.repo.UserRepo
 import io.github.abdulroufsidhu.orgolink_auth.services.OrgoUserDetailsService
 import io.github.abdulroufsidhu.orgolink_auth.services.ProjectTokenService
-import io.github.abdulroufsidhu.orgolink_auth.services.UserService
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -56,7 +55,13 @@ class ProjectTokenAuthenticationFilter(
 
                     // Create enhanced user principal with project context
                     val enhancedUserPrincipal =
-                        projectToken.projectId?.let { ProjectUserPrincipal(userDetails, it, projectToken.role) }
+                        projectToken.projectId?.let {
+                            ProjectUserPrincipal(
+                                userDetails,
+                                it,
+                                projectToken.role,
+                            )
+                        }
 
                     val authToken =
                         UsernamePasswordAuthenticationToken(

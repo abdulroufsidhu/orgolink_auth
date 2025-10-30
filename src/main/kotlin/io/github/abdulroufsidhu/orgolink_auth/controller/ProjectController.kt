@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
+import kotlinx.coroutines.runBlocking
 import org.springframework.context.annotation.Profile
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -35,11 +36,11 @@ class ProjectController(private val projectService: ProjectService) {
         summary = "Create a new project",
         description = "Creates a new project with the authenticated user as owner"
     )
-    suspend fun createProject(
+    fun createProject(
         @Valid @RequestBody requestDTO: CreateProjectRequestDTO,
         @AuthenticationPrincipal userPrincipal: OrgoUserPrincipal
-    ): ResponseEntity<ValidResponseData<ProjectResponseDTO>> {
-        return projectService.createProject(requestDTO, userPrincipal)
+    ): ResponseEntity<ValidResponseData<ProjectResponseDTO>> = runBlocking {
+        projectService.createProject(requestDTO, userPrincipal)
     }
 
     @GetMapping
@@ -47,16 +48,16 @@ class ProjectController(private val projectService: ProjectService) {
         summary = "Get user's projects",
         description = "Retrieves all projects where the user is a member"
     )
-    suspend fun getUserProjects(
+    fun getUserProjects(
         @AuthenticationPrincipal userPrincipal: OrgoUserPrincipal
-    ): ResponseEntity<ValidResponseData<List<ProjectResponseDTO>>> {
-        return projectService.getUserProjects(userPrincipal)
+    ): ResponseEntity<ValidResponseData<List<ProjectResponseDTO>>> = runBlocking{
+        projectService.getUserProjects(userPrincipal)
     }
 
     @GetMapping("/public")
     @Operation(summary = "Get public projects", description = "Retrieves all public projects")
-    suspend fun getPublicProjects(): ResponseEntity<ValidResponseData<List<ProjectResponseDTO>>> {
-        return projectService.getPublicProjects()
+    fun getPublicProjects(): ResponseEntity<ValidResponseData<List<ProjectResponseDTO>>> = runBlocking {
+         projectService.getPublicProjects()
     }
 
     @GetMapping("/{projectKey}")
@@ -64,10 +65,10 @@ class ProjectController(private val projectService: ProjectService) {
         summary = "Get project by key",
         description = "Retrieves a specific project by its key"
     )
-    suspend fun getProjectByKey(
+    fun getProjectByKey(
         @Parameter(description = "Project key") @PathVariable projectKey: String
-    ): ResponseEntity<ValidResponseData<ProjectResponseDTO>> {
-        return projectService.getProjectByKey(projectKey)
+    ): ResponseEntity<ValidResponseData<ProjectResponseDTO>> = runBlocking {
+         projectService.getProjectByKey(projectKey)
     }
 
     @PutMapping("/{projectKey}")
@@ -75,12 +76,12 @@ class ProjectController(private val projectService: ProjectService) {
         summary = "Update project",
         description = "Updates project details (requires OWNER or ADMIN role)"
     )
-    suspend fun updateProject(
+    fun updateProject(
         @Parameter(description = "Project key") @PathVariable projectKey: String,
         @Valid @RequestBody requestDTO: CreateProjectRequestDTO,
         @AuthenticationPrincipal userPrincipal: OrgoUserPrincipal
-    ): ResponseEntity<ValidResponseData<ProjectResponseDTO>> {
-        return projectService.updateProject(projectKey, requestDTO, userPrincipal)
+    ): ResponseEntity<ValidResponseData<ProjectResponseDTO>> = runBlocking{
+         projectService.updateProject(projectKey, requestDTO, userPrincipal)
     }
 
     @DeleteMapping("/{projectKey}")
@@ -88,11 +89,11 @@ class ProjectController(private val projectService: ProjectService) {
         summary = "Delete project",
         description = "Soft deletes a project (requires OWNER role)"
     )
-    suspend fun deleteProject(
+    fun deleteProject(
         @Parameter(description = "Project key") @PathVariable projectKey: String,
         @AuthenticationPrincipal userPrincipal: OrgoUserPrincipal
-    ): ResponseEntity<ValidResponseData<Nothing>> {
-        return projectService.deleteProject(projectKey, userPrincipal)
+    ): ResponseEntity<ValidResponseData<Nothing>> = runBlocking{
+         projectService.deleteProject(projectKey, userPrincipal)
     }
 
     @PostMapping("/{projectKey}/users")
@@ -101,12 +102,12 @@ class ProjectController(private val projectService: ProjectService) {
         description =
             "Adds a user to the project with specified role (requires OWNER or ADMIN role)"
     )
-    suspend fun addUserToProject(
+    fun addUserToProject(
         @Parameter(description = "Project key") @PathVariable projectKey: String,
         @Valid @RequestBody requestDTO: AddUserToProjectRequestDTO,
         @AuthenticationPrincipal userPrincipal: OrgoUserPrincipal
-    ): ResponseEntity<ValidResponseData<ProjectUserResponseDTO>> {
-        return projectService.addUserToProject(projectKey, requestDTO, userPrincipal)
+    ): ResponseEntity<ValidResponseData<ProjectUserResponseDTO>> = runBlocking {
+         projectService.addUserToProject(projectKey, requestDTO, userPrincipal)
     }
 
     @GetMapping("/{projectKey}/users")
@@ -114,11 +115,11 @@ class ProjectController(private val projectService: ProjectService) {
         summary = "Get project users",
         description = "Retrieves all users associated with the project"
     )
-    suspend fun getProjectUsers(
+    fun getProjectUsers(
         @Parameter(description = "Project key") @PathVariable projectKey: String,
         @AuthenticationPrincipal userPrincipal: OrgoUserPrincipal
-    ): ResponseEntity<ValidResponseData<List<ProjectUserResponseDTO>>> {
-        return projectService.getProjectUsers(projectKey, userPrincipal)
+    ): ResponseEntity<ValidResponseData<List<ProjectUserResponseDTO>>> = runBlocking {
+        projectService.getProjectUsers(projectKey, userPrincipal)
     }
 
     @DeleteMapping("/{projectKey}/users/{username}")
@@ -126,12 +127,12 @@ class ProjectController(private val projectService: ProjectService) {
         summary = "Remove user from project",
         description = "Removes a user from the project (requires OWNER or ADMIN role)"
     )
-    suspend fun removeUserFromProject(
+    fun removeUserFromProject(
         @Parameter(description = "Project key") @PathVariable projectKey: String,
         @Parameter(description = "Username to remove") @PathVariable username: String,
         @AuthenticationPrincipal userPrincipal: OrgoUserPrincipal
-    ): ResponseEntity<ValidResponseData<Nothing>> {
-        return projectService.removeUserFromProject(projectKey, username, userPrincipal)
+    ): ResponseEntity<ValidResponseData<Nothing>> = runBlocking {
+         projectService.removeUserFromProject(projectKey, username, userPrincipal)
     }
 }
 
@@ -141,8 +142,8 @@ class ProjectController(private val projectService: ProjectService) {
 class TestProjectController(private val projectService: ProjectService) {
 
     @DeleteMapping("/api/projects/{projectKey}/permanent")
-    suspend fun delete(
+    fun delete(
         @Parameter(description = "Project key") @PathVariable projectKey: String,
         @AuthenticationPrincipal userPrincipal: OrgoUserPrincipal
-    ) = projectService.deletePermanent(projectKey, userPrincipal)
+    ) = runBlocking { projectService.deletePermanent(projectKey, userPrincipal) }
 }

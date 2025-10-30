@@ -12,6 +12,8 @@ import io.github.abdulroufsidhu.orgolink_auth.model.ProjectUser
 import io.github.abdulroufsidhu.orgolink_auth.repo.ProjectRepo
 import io.github.abdulroufsidhu.orgolink_auth.repo.ProjectUserRepo
 import io.github.abdulroufsidhu.orgolink_auth.repo.UserRepo
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.HttpStatus
@@ -28,14 +30,14 @@ class ProjectService(
     private val userRepo: UserRepo
 ) {
 
-    fun createProject(
+    suspend fun createProject(
         requestDTO: CreateProjectRequestDTO,
         userPrincipal: OrgoUserPrincipal
-    ): ResponseEntity<ValidResponseData<ProjectResponseDTO>> {
+    ): ResponseEntity<ValidResponseData<ProjectResponseDTO>> = withContext(Dispatchers.IO) {
         try {
             // Check if project key already exists
             if (projectRepo.existsByProjectKey(requestDTO.projectKey!!)) {
-                return ResponseEntity.badRequest()
+                return@withContext ResponseEntity.badRequest()
                     .body(ValidResponseData(message = "Project key already exists", data = null))
             }
 
@@ -52,7 +54,7 @@ class ProjectService(
                 )
             projectUserRepo.save(projectUser)
 
-            return ResponseEntity.status(HttpStatus.CREATED)
+            return@withContext ResponseEntity.status(HttpStatus.CREATED)
                 .body(
                     ValidResponseData(
                         message = "Project created successfully",
@@ -60,10 +62,10 @@ class ProjectService(
                     )
                 )
         } catch (e: DataIntegrityViolationException) {
-            return ResponseEntity.badRequest()
+            return@withContext ResponseEntity.badRequest()
                 .body(ValidResponseData(message = "Project key already exists", data = null))
         } catch (e: Exception) {
-            return ResponseEntity.internalServerError()
+            return@withContext ResponseEntity.internalServerError()
                 .body(
                     ValidResponseData(
                         message = "Failed to create project: ${e.message}",
@@ -73,18 +75,24 @@ class ProjectService(
         }
     }
 
-    fun getProjectByKey(projectKey: String): ResponseEntity<ValidResponseData<ProjectResponseDTO>> {
-        val project =
-            projectRepo.findByProjectKey(projectKey) ?: return ResponseEntity.notFound().build()
+    suspend fun getProjectByKey(projectKey: String): ResponseEntity<ValidResponseData<ProjectResponseDTO>> =
+        withContext(
+            Dispatchers.IO
+        ) {
+            val project =
+                projectRepo.findByProjectKey(projectKey) ?: return@withContext ResponseEntity.notFound().build()
 
-        return ResponseEntity.ok(
-            ValidResponseData(message = "Project found", data = ProjectResponseDTO.from(project))
-        )
-    }
+            return@withContext ResponseEntity.ok(
+                ValidResponseData(
+                    message = "Project found",
+                    data = ProjectResponseDTO.from(project)
+                )
+            )
+        }
 
-    fun getUserProjects(
+    suspend fun getUserProjects(
         userPrincipal: OrgoUserPrincipal
-    ): ResponseEntity<ValidResponseData<List<ProjectResponseDTO>>> {
+    ): ResponseEntity<ValidResponseData<List<ProjectResponseDTO>>>  = withContext(Dispatchers.IO) {
         val projects = projectRepo.findProjectsByUserId(userPrincipal.id!!)
         val projectDTOs =
             projects.map { project ->
@@ -93,16 +101,17 @@ class ProjectService(
                 ProjectResponseDTO.from(project, userRole)
             }
 
-        return ResponseEntity.ok(
+        return@withContext ResponseEntity.ok(
             ValidResponseData(message = "User projects retrieved successfully", data = projectDTOs)
         )
     }
 
-    fun getPublicProjects(): ResponseEntity<ValidResponseData<List<ProjectResponseDTO>>> {
+    suspend fun getPublicProjects(): ResponseEntity<ValidResponseData<List<ProjectResponseDTO>>> = withContext(
+        Dispatchers.IO) {
         val projects = projectRepo.findByIsPublicTrueAndIsActiveTrue()
         val projectDTOs = projects.map { ProjectResponseDTO.from(it) }
 
-        return ResponseEntity.ok(
+        return@withContext ResponseEntity.ok(
             ValidResponseData(
                 message = "Public projects retrieved successfully",
                 data = projectDTOs
@@ -110,19 +119,19 @@ class ProjectService(
         )
     }
 
-    fun addUserToProject(
+    suspend fun addUserToProject(
         projectKey: String,
         requestDTO: AddUserToProjectRequestDTO,
         userPrincipal: OrgoUserPrincipal
-    ): ResponseEntity<ValidResponseData<ProjectUserResponseDTO>> {
+    ): ResponseEntity<ValidResponseData<ProjectUserResponseDTO>> = withContext(Dispatchers.IO) {
         val project =
-            projectRepo.findByProjectKey(projectKey) ?: return ResponseEntity.notFound().build()
+            projectRepo.findByProjectKey(projectKey) ?: return@withContext ResponseEntity.notFound().build()
 
         // Check if current user has permission to add users (OWNER or ADMIN)
         val currentUserRole =
             projectUserRepo.findActiveProjectUser(userPrincipal.id!!, project.id!!)
         if (currentUserRole?.role !in listOf(ProjectRole.OWNER, ProjectRole.ADMIN)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+            return@withContext ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(
                     ValidResponseData(
                         message = "Insufficient permissions to add users to this project",
@@ -134,7 +143,7 @@ class ProjectService(
         // Find user to add
         val userToAdd =
             userRepo.findByUsername(requestDTO.username)
-                ?: return ResponseEntity.badRequest()
+                ?: return@withContext ResponseEntity.badRequest()
                     .body(ValidResponseData(message = "User not found", data = null))
 
         // Check if user is already in project
@@ -143,7 +152,7 @@ class ProjectService(
                 project.id!!
             )
         ) {
-            return ResponseEntity.badRequest()
+            return@withContext ResponseEntity.badRequest()
                 .body(
                     ValidResponseData(
                         message = "User is already a member of this project",
@@ -154,7 +163,7 @@ class ProjectService(
 
         // Only owners can add other owners
         if (requestDTO.role == ProjectRole.OWNER && currentUserRole?.role != ProjectRole.OWNER) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+            return@withContext ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(ValidResponseData(message = "Only owners can add other owners", data = null))
         }
 
@@ -170,14 +179,14 @@ class ProjectService(
             val user = savedProjectUser.userId?.let { userRepo.findById(it).orElse(null) }
             val project = savedProjectUser.projectId?.let { projectRepo.findById(it).orElse(null) }
 
-            return ResponseEntity.ok(
+            return@withContext ResponseEntity.ok(
                 ValidResponseData(
                     message = "User added to project successfully",
                     data = ProjectUserResponseDTO.from(savedProjectUser, project, user?.username)
                 )
             )
         } catch (e: Exception) {
-            return ResponseEntity.internalServerError()
+            return@withContext ResponseEntity.internalServerError()
                 .body(
                     ValidResponseData(
                         message = "Failed to add user to project: ${e.message}",
@@ -187,17 +196,17 @@ class ProjectService(
         }
     }
 
-    fun getProjectUsers(
+    suspend fun getProjectUsers(
         projectKey: String,
         userPrincipal: OrgoUserPrincipal
-    ): ResponseEntity<ValidResponseData<List<ProjectUserResponseDTO>>> {
+    ): ResponseEntity<ValidResponseData<List<ProjectUserResponseDTO>>> = withContext(Dispatchers.IO) {
         val project =
-            projectRepo.findByProjectKey(projectKey) ?: return ResponseEntity.notFound().build()
+            projectRepo.findByProjectKey(projectKey) ?: return@withContext ResponseEntity.notFound().build()
 
         // Check if user has access to this project
         val userRole = projectUserRepo.findActiveProjectUser(userPrincipal.id!!, project.id!!)
         if (userRole == null) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+            return@withContext ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(ValidResponseData(message = "Access denied to this project", data = null))
         }
 
@@ -209,7 +218,7 @@ class ProjectService(
             ProjectUserResponseDTO.from(it, project, user?.username)
         }
 
-        return ResponseEntity.ok(
+        return@withContext ResponseEntity.ok(
             ValidResponseData(
                 message = "Project users retrieved successfully",
                 data = projectUserDTOs
@@ -217,19 +226,19 @@ class ProjectService(
         )
     }
 
-    fun removeUserFromProject(
+    suspend fun removeUserFromProject(
         projectKey: String,
         username: String,
         userPrincipal: OrgoUserPrincipal
-    ): ResponseEntity<ValidResponseData<Nothing>> {
+    ): ResponseEntity<ValidResponseData<Nothing>> = withContext(Dispatchers.IO) {
         val project =
-            projectRepo.findByProjectKey(projectKey) ?: return ResponseEntity.notFound().build()
+            projectRepo.findByProjectKey(projectKey) ?: return@withContext ResponseEntity.notFound().build()
 
         // Check if current user has permission to remove users (OWNER or ADMIN)
         val currentUserRole =
             projectUserRepo.findActiveProjectUser(userPrincipal.id!!, project.id!!)
         if (currentUserRole?.role !in listOf(ProjectRole.OWNER, ProjectRole.ADMIN)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+            return@withContext ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(
                     ValidResponseData(
                         message =
@@ -242,12 +251,12 @@ class ProjectService(
         // Find user to remove
         val userToRemove =
             userRepo.findByUsername(username)
-                ?: return ResponseEntity.badRequest()
+                ?: return@withContext ResponseEntity.badRequest()
                     .body(ValidResponseData(message = "User not found", data = null))
 
         val projectUser =
             projectUserRepo.findActiveProjectUser(userToRemove.id!!, project.id!!)
-                ?: return ResponseEntity.badRequest()
+                ?: return@withContext ResponseEntity.badRequest()
                     .body(
                         ValidResponseData(
                             message = "User is not a member of this project",
@@ -257,7 +266,7 @@ class ProjectService(
 
         // Only owners can remove other owners
         if (projectUser.role == ProjectRole.OWNER && currentUserRole?.role != ProjectRole.OWNER) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+            return@withContext ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(
                     ValidResponseData(
                         message = "Only owners can remove other owners",
@@ -271,7 +280,7 @@ class ProjectService(
             val ownerCount =
                 projectUserRepo.countActiveUsersByProjectIdAndRole(project.id!!, ProjectRole.OWNER)
             if (ownerCount <= 1) {
-                return ResponseEntity.badRequest()
+                return@withContext ResponseEntity.badRequest()
                     .body(
                         ValidResponseData(
                             message = "Cannot remove the last owner of the project",
@@ -285,11 +294,11 @@ class ProjectService(
             projectUser.isActive = false
             projectUserRepo.save(projectUser)
 
-            return ResponseEntity.ok(
+            return@withContext ResponseEntity.ok(
                 ValidResponseData(message = "User removed from project successfully", data = null)
             )
         } catch (e: Exception) {
-            return ResponseEntity.internalServerError()
+            return@withContext ResponseEntity.internalServerError()
                 .body(
                     ValidResponseData(
                         message = "Failed to remove user from project: ${e.message}",
@@ -299,18 +308,18 @@ class ProjectService(
         }
     }
 
-    fun updateProject(
+    suspend fun updateProject(
         projectKey: String,
         requestDTO: CreateProjectRequestDTO,
         userPrincipal: OrgoUserPrincipal
-    ): ResponseEntity<ValidResponseData<ProjectResponseDTO>> {
+    ): ResponseEntity<ValidResponseData<ProjectResponseDTO>> = withContext(Dispatchers.IO) {
         val project =
-            projectRepo.findByProjectKey(projectKey) ?: return ResponseEntity.notFound().build()
+            projectRepo.findByProjectKey(projectKey) ?: return@withContext ResponseEntity.notFound().build()
 
         // Check if user has permission to update (OWNER or ADMIN)
         val userRole = projectUserRepo.findActiveProjectUser(userPrincipal.id!!, project.id!!)
         if (userRole?.role !in listOf(ProjectRole.OWNER, ProjectRole.ADMIN)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+            return@withContext ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(
                     ValidResponseData(
                         message = "Insufficient permissions to update this project",
@@ -323,7 +332,7 @@ class ProjectService(
         if (requestDTO.projectKey != project.projectKey &&
             projectRepo.existsByProjectKey(requestDTO.projectKey!!)
         ) {
-            return ResponseEntity.badRequest()
+            return@withContext ResponseEntity.badRequest()
                 .body(ValidResponseData(message = "Project key already exists", data = null))
         }
 
@@ -335,14 +344,14 @@ class ProjectService(
 
             val updatedProject = projectRepo.save(project)
 
-            return ResponseEntity.ok(
+            return@withContext ResponseEntity.ok(
                 ValidResponseData(
                     message = "Project updated successfully",
                     data = ProjectResponseDTO.from(updatedProject, userRole?.role)
                 )
             )
         } catch (e: Exception) {
-            return ResponseEntity.internalServerError()
+            return@withContext ResponseEntity.internalServerError()
                 .body(
                     ValidResponseData(
                         message = "Failed to update project: ${e.message}",
@@ -352,17 +361,17 @@ class ProjectService(
         }
     }
 
-    fun deletePermanent(
+    suspend fun deletePermanent(
         projectKey: String,
         userPrincipal: OrgoUserPrincipal
-    ): ResponseEntity<ValidResponseData<Nothing>> {
+    ): ResponseEntity<ValidResponseData<Nothing>> = withContext(Dispatchers.IO) {
         val project =
-            projectRepo.findByProjectKey(projectKey) ?: return ResponseEntity.notFound().build()
+            projectRepo.findByProjectKey(projectKey) ?: return@withContext ResponseEntity.notFound().build()
 
         // Check if user is owner
         val userRole = projectUserRepo.findActiveProjectUser(userPrincipal.id!!, project.id!!)
         if (userRole?.role != ProjectRole.OWNER) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+            return@withContext ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(ValidResponseData(message = "Only owners can delete projects", data = null))
         }
 
@@ -371,11 +380,11 @@ class ProjectService(
                 projectRepo.deleteById(it)
             }
 
-            return ResponseEntity.ok(
+            return@withContext ResponseEntity.ok(
                 ValidResponseData(message = "Project deleted successfully", data = null)
             )
         } catch (e: Exception) {
-            return ResponseEntity.internalServerError()
+            return@withContext ResponseEntity.internalServerError()
                 .body(
                     ValidResponseData(
                         message = "Failed to delete project: ${e.message}",
@@ -385,17 +394,17 @@ class ProjectService(
         }
     }
 
-    fun deleteProject(
+    suspend fun deleteProject(
         projectKey: String,
         userPrincipal: OrgoUserPrincipal
-    ): ResponseEntity<ValidResponseData<Nothing>> {
+    ): ResponseEntity<ValidResponseData<Nothing>> = withContext(Dispatchers.IO) {
         val project =
-            projectRepo.findByProjectKey(projectKey) ?: return ResponseEntity.notFound().build()
+            projectRepo.findByProjectKey(projectKey) ?: return@withContext ResponseEntity.notFound().build()
 
         // Check if user is owner
         val userRole = projectUserRepo.findActiveProjectUser(userPrincipal.id!!, project.id!!)
         if (userRole?.role != ProjectRole.OWNER) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+            return@withContext ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(ValidResponseData(message = "Only owners can delete projects", data = null))
         }
 
@@ -403,11 +412,11 @@ class ProjectService(
             project.isActive = false
             projectRepo.save(project)
 
-            return ResponseEntity.ok(
+            return@withContext ResponseEntity.ok(
                 ValidResponseData(message = "Project deleted successfully", data = null)
             )
         } catch (e: Exception) {
-            return ResponseEntity.internalServerError()
+            return@withContext ResponseEntity.internalServerError()
                 .body(
                     ValidResponseData(
                         message = "Failed to delete project: ${e.message}",
@@ -417,7 +426,7 @@ class ProjectService(
         }
     }
 
-    fun findById(projectId: UUID?): Project? {
-        return projectId?.let { projectRepo.findByIdOrNull(it) }
+    suspend fun findById(projectId: UUID?): Project? = withContext(Dispatchers.IO) {
+        return@withContext projectId?.let { projectRepo.findByIdOrNull(it) }
     }
 }
