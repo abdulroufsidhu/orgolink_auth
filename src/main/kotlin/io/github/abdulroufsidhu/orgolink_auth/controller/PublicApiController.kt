@@ -27,7 +27,7 @@ class PublicApiController(
         summary = "Get all public projects",
         description = "Retrieves all publicly available projects"
     )
-    fun getPublicProjects(): ResponseEntity<ValidResponseData<List<ProjectResponseDTO>>> {
+    suspend fun getPublicProjects(): ResponseEntity<ValidResponseData<List<ProjectResponseDTO>>> {
         return projectService.getPublicProjects()
     }
 
@@ -36,7 +36,7 @@ class PublicApiController(
         summary = "Get public project by key",
         description = "Retrieves a public project by its key"
     )
-    fun getPublicProject(
+    suspend fun getPublicProject(
         @Parameter(description = "Project key") @PathVariable projectKey: String
     ): ResponseEntity<ValidResponseData<ProjectResponseDTO>> {
         val response = projectService.getProjectByKey(projectKey)
@@ -57,7 +57,7 @@ class PublicApiController(
         summary = "Validate project access token",
         description = "Validates a project access token and returns project information if valid"
     )
-    fun validateProjectToken(
+    suspend fun validateProjectToken(
         @Parameter(description = "Project key") @PathVariable projectKey: String,
         @RequestBody tokenRequest: TokenValidationRequest
     ): ResponseEntity<ValidResponseData<ProjectTokenValidationResponse>> {
@@ -93,7 +93,7 @@ class PublicApiController(
 
     @GetMapping("/health")
     @Operation(summary = "Health check", description = "Simple health check endpoint")
-    fun healthCheck(): ResponseEntity<ValidResponseData<String>> {
+    suspend fun healthCheck(): ResponseEntity<ValidResponseData<String>> {
         return ResponseEntity.ok(ValidResponseData(message = "Service is running", data = "OK"))
     }
 }

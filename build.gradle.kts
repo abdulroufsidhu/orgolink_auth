@@ -26,8 +26,13 @@ dependencies {
   runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
   runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.11.5")
 
-  implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9") // swagger
-  implementation("com.fasterxml.jackson.module:jackson-module-kotlin") // swagger
+  // Coroutines
+  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
+  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
+
+  // OpenAPI Documentation Swagger
+  implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9")
+  implementation("com.fasterxml.jackson.module:jackson-module-kotlin") 
 
   developmentOnly("org.springframework.boot:spring-boot-devtools")
   testImplementation("org.springframework.boot:spring-boot-starter-test")
@@ -50,5 +55,5 @@ tasks.test {
 
 
 tasks.named("bootRun") {
-    dependsOn("test")
+    // dependsOn("test")
 }

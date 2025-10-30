@@ -15,6 +15,8 @@ import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
 import io.jsonwebtoken.io.Decoders
 import io.jsonwebtoken.security.Keys
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -34,22 +36,22 @@ class ProjectTokenService(
     @Value("\${jwt.secret}") private val secretKey: String
 ) {
 
-    fun generateProjectToken(
+    suspend fun generateProjectToken(
         projectKey: String,
         requestDTO: GenerateProjectTokenRequestDTO,
         userPrincipal: OrgoUserPrincipal
-    ): ResponseEntity<ValidResponseData<ProjectTokenResponseDTO>> {
+    ): ResponseEntity<ValidResponseData<ProjectTokenResponseDTO>> = withContext(Dispatchers.IO) {
         val project =
-            projectRepo.findByProjectKey(projectKey) ?: return ResponseEntity.notFound().build()
+            projectRepo.findByProjectKey(projectKey) ?: return@withContext ResponseEntity.notFound().build()
 
         // Check if user has permission to generate tokens (OWNER or ADMIN)
         val userRole = projectUserRepo.findActiveProjectUser(userPrincipal.id!!, project.id!!)
         if (userRole?.role !in listOf(ProjectRole.OWNER, ProjectRole.ADMIN)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+            return@withContext ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(
                     ValidResponseData(
                         message =
-                        "Insufficient permissions to generate tokens for this project",
+                            "Insufficient permissions to generate tokens for this project",
                         data = null
                     )
                 )
@@ -57,7 +59,7 @@ class ProjectTokenService(
 
         // Only owners can generate owner tokens
         if (requestDTO.role == ProjectRole.OWNER && userRole?.role != ProjectRole.OWNER) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+            return@withContext ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(
                     ValidResponseData(
                         message = "Only owners can generate owner tokens",
@@ -95,14 +97,14 @@ class ProjectTokenService(
             val project = projectRepo.findById(savedToken.projectId!!).orElse(null)
             val user = userRepo.findById(savedToken.userId!!).orElse(null)
 
-            return ResponseEntity.ok(
+            return@withContext ResponseEntity.ok(
                 ValidResponseData(
                     message = "Project access token generated successfully",
                     data = ProjectTokenResponseDTO.from(savedToken, project, user.username)
                 )
             )
         } catch (e: Exception) {
-            return ResponseEntity.internalServerError()
+            return@withContext ResponseEntity.internalServerError()
                 .body(
                     ValidResponseData(
                         message = "Failed to generate project token: ${e.message}",
@@ -112,17 +114,17 @@ class ProjectTokenService(
         }
     }
 
-    fun getProjectTokens(
+    suspend fun getProjectTokens(
         projectKey: String,
         userPrincipal: OrgoUserPrincipal
-    ): ResponseEntity<ValidResponseData<List<ProjectTokenResponseDTO>>> {
+    ): ResponseEntity<ValidResponseData<List<ProjectTokenResponseDTO>>> = withContext(Dispatchers.IO) {
         val project =
-            projectRepo.findByProjectKey(projectKey) ?: return ResponseEntity.notFound().build()
+            projectRepo.findByProjectKey(projectKey) ?: return@withContext ResponseEntity.notFound().build()
 
         // Check if user has permission to view tokens (OWNER or ADMIN)
         val userRole = projectUserRepo.findActiveProjectUser(userPrincipal.id!!, project.id!!)
         if (userRole?.role !in listOf(ProjectRole.OWNER, ProjectRole.ADMIN)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+            return@withContext ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(
                     ValidResponseData(
                         message = "Insufficient permissions to view tokens for this project",
@@ -138,27 +140,27 @@ class ProjectTokenService(
                 ProjectTokenResponseDTO.from(it, project, user.username)
             }
 
-        return ResponseEntity.ok(
+        return@withContext ResponseEntity.ok(
             ValidResponseData(message = "Project tokens retrieved successfully", data = tokenDTOs)
         )
     }
 
-    fun revokeProjectToken(
+    suspend fun revokeProjectToken(
         projectKey: String,
         tokenId: UUID,
         userPrincipal: OrgoUserPrincipal
-    ): ResponseEntity<ValidResponseData<Nothing>> {
+    ): ResponseEntity<ValidResponseData<Nothing>> = withContext(Dispatchers.IO) {
         val project =
-            projectRepo.findByProjectKey(projectKey) ?: return ResponseEntity.notFound().build()
+            projectRepo.findByProjectKey(projectKey) ?: return@withContext ResponseEntity.notFound().build()
 
         // Check if user has permission to revoke tokens (OWNER or ADMIN)
         val userRole = projectUserRepo.findActiveProjectUser(userPrincipal.id!!, project.id!!)
         if (userRole?.role !in listOf(ProjectRole.OWNER, ProjectRole.ADMIN)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+            return@withContext ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(
                     ValidResponseData(
                         message =
-                        "Insufficient permissions to revoke tokens for this project",
+                            "Insufficient permissions to revoke tokens for this project",
                         data = null
                     )
                 )
@@ -166,10 +168,10 @@ class ProjectTokenService(
 
         val token =
             projectAccessTokenRepo.findById(tokenId).orElse(null)
-                ?: return ResponseEntity.notFound().build()
+                ?: return@withContext ResponseEntity.notFound().build()
 
         if (token.projectId != project.id) {
-            return ResponseEntity.badRequest()
+            return@withContext ResponseEntity.badRequest()
                 .body(
                     ValidResponseData(
                         message = "Token does not belong to this project",
@@ -182,11 +184,11 @@ class ProjectTokenService(
             token.isRevoked = true
             projectAccessTokenRepo.save(token)
 
-            return ResponseEntity.ok(
+            return@withContext ResponseEntity.ok(
                 ValidResponseData(message = "Project token revoked successfully", data = null)
             )
         } catch (e: Exception) {
-            return ResponseEntity.internalServerError()
+            return@withContext ResponseEntity.internalServerError()
                 .body(
                     ValidResponseData(
                         message = "Failed to revoke project token: ${e.message}",
@@ -196,8 +198,8 @@ class ProjectTokenService(
         }
     }
 
-    fun validateProjectToken(token: String): ProjectAccessToken? {
-        return try {
+    suspend fun validateProjectToken(token: String): ProjectAccessToken? = withContext(Dispatchers.IO) {
+        return@withContext try {
             val projectToken = projectAccessTokenRepo.findValidToken(token)
             if (projectToken != null && isTokenValid(projectToken)) {
                 projectToken
@@ -207,9 +209,9 @@ class ProjectTokenService(
         }
     }
 
-    fun getUserProjectTokens(
+    suspend fun getUserProjectTokens(
         userPrincipal: OrgoUserPrincipal
-    ): ResponseEntity<ValidResponseData<List<ProjectTokenResponseDTO>>> {
+    ): ResponseEntity<ValidResponseData<List<ProjectTokenResponseDTO>>> = withContext(Dispatchers.IO) {
         val tokens = projectAccessTokenRepo.findValidTokensByUserId(userPrincipal.id!!)
         val tokenDTOs = tokens.map {
             val project = projectRepo.findById(it.projectId!!).orElse(null)
@@ -217,7 +219,7 @@ class ProjectTokenService(
             ProjectTokenResponseDTO.from(it, project, user.username)
         }
 
-        return ResponseEntity.ok(
+        return@withContext ResponseEntity.ok(
             ValidResponseData(
                 message = "User project tokens retrieved successfully",
                 data = tokenDTOs
@@ -225,9 +227,9 @@ class ProjectTokenService(
         )
     }
 
-    fun revokeAllUserProjectTokens(
+    suspend fun revokeAllUserProjectTokens(
         userPrincipal: OrgoUserPrincipal
-    ): ResponseEntity<ValidResponseData<Nothing>> {
+    ): ResponseEntity<ValidResponseData<Nothing>> = withContext(Dispatchers.IO) {
         try {
             val tokens = projectAccessTokenRepo.findByUserIdAndIsRevokedFalse(userPrincipal.id!!)
             tokens.forEach { token ->
@@ -235,14 +237,14 @@ class ProjectTokenService(
                 projectAccessTokenRepo.save(token)
             }
 
-            return ResponseEntity.ok(
+            return@withContext ResponseEntity.ok(
                 ValidResponseData(
                     message = "All user project tokens revoked successfully",
                     data = null
                 )
             )
         } catch (e: Exception) {
-            return ResponseEntity.internalServerError()
+            return@withContext ResponseEntity.internalServerError()
                 .body(
                     ValidResponseData(
                         message = "Failed to revoke user project tokens: ${e.message}",
@@ -252,12 +254,12 @@ class ProjectTokenService(
         }
     }
 
-    private fun generateSecureToken(
+    private suspend fun generateSecureToken(
         userId: UUID,
         projectId: UUID,
         role: ProjectRole,
         expirationDate: Date
-    ): String {
+    ): String = withContext(Dispatchers.Default) {
         val claims =
             mapOf(
                 "userId" to userId.toString(),
@@ -266,7 +268,7 @@ class ProjectTokenService(
                 "type" to "project_access"
             )
 
-        return Jwts.builder()
+        return@withContext Jwts.builder()
             .setClaims(claims)
             .setSubject("project_access")
             .setIssuedAt(Date())
@@ -275,17 +277,16 @@ class ProjectTokenService(
             .compact()
     }
 
-    private fun isTokenValid(projectToken: ProjectAccessToken): Boolean {
-        return !projectToken.isRevoked && projectToken.expiresAt?.after(Date()) == true
-    }
+    suspend private fun isTokenValid(projectToken: ProjectAccessToken): Boolean =
+        withContext(Dispatchers.Default) { !projectToken.isRevoked && projectToken.expiresAt?.after(Date()) == true }
 
-    private fun getSignInKey(): Key {
+    private suspend fun getSignInKey(): Key = withContext(Dispatchers.Default) {
         val keyBytes = Decoders.BASE64.decode(secretKey)
-        return Keys.hmacShaKeyFor(keyBytes)
+        return@withContext Keys.hmacShaKeyFor(keyBytes)
     }
 
-    fun extractClaimsFromToken(token: String): Claims? {
-        return try {
+    suspend fun extractClaimsFromToken(token: String): Claims? = withContext(Dispatchers.Default) {
+        return@withContext try {
             Jwts.parserBuilder().setSigningKey(getSignInKey()).build().parseClaimsJws(token).body
         } catch (e: Exception) {
             null

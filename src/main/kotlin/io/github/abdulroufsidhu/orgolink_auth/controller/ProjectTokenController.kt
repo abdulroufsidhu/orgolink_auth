@@ -12,14 +12,8 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.web.bind.annotation.DeleteMapping
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
-import java.util.UUID
+import org.springframework.web.bind.annotation.*
+import java.util.*
 
 @RestController
 @RequestMapping("/api/projects")
@@ -31,60 +25,54 @@ class ProjectTokenController(private val projectTokenService: ProjectTokenServic
     @Operation(
         summary = "Generate project access token",
         description =
-        "Generates a new access token for the project (requires OWNER or ADMIN role)"
+            "Generates a new access token for the project (requires OWNER or ADMIN role)"
     )
-    fun generateProjectToken(
+    suspend fun generateProjectToken(
         @Parameter(description = "Project key") @PathVariable projectKey: String,
         @Valid @RequestBody requestDTO: GenerateProjectTokenRequestDTO,
         @AuthenticationPrincipal userPrincipal: OrgoUserPrincipal
-    ): ResponseEntity<ValidResponseData<ProjectTokenResponseDTO>> {
-        return projectTokenService.generateProjectToken(projectKey, requestDTO, userPrincipal)
-    }
+    ): ResponseEntity<ValidResponseData<ProjectTokenResponseDTO>> =
+        projectTokenService.generateProjectToken(projectKey, requestDTO, userPrincipal)
 
     @GetMapping("/{projectKey}/tokens")
     @Operation(
         summary = "Get project tokens",
         description = "Retrieves all active tokens for the project (requires OWNER or ADMIN role)"
     )
-    fun getProjectTokens(
+    suspend fun getProjectTokens(
         @Parameter(description = "Project key") @PathVariable projectKey: String,
         @AuthenticationPrincipal userPrincipal: OrgoUserPrincipal
-    ): ResponseEntity<ValidResponseData<List<ProjectTokenResponseDTO>>> {
-        return projectTokenService.getProjectTokens(projectKey, userPrincipal)
-    }
+    ): ResponseEntity<ValidResponseData<List<ProjectTokenResponseDTO>>> =
+        projectTokenService.getProjectTokens(projectKey, userPrincipal)
 
     @DeleteMapping("/{projectKey}/tokens/{tokenId}")
     @Operation(
         summary = "Revoke project token",
         description = "Revokes a specific project access token (requires OWNER or ADMIN role)"
     )
-    fun revokeProjectToken(
+    suspend fun revokeProjectToken(
         @Parameter(description = "Project key") @PathVariable projectKey: String,
         @Parameter(description = "Token ID") @PathVariable tokenId: UUID,
         @AuthenticationPrincipal userPrincipal: OrgoUserPrincipal
-    ): ResponseEntity<ValidResponseData<Nothing>> {
-        return projectTokenService.revokeProjectToken(projectKey, tokenId, userPrincipal)
-    }
+    ): ResponseEntity<ValidResponseData<Nothing>> =
+        projectTokenService.revokeProjectToken(projectKey, tokenId, userPrincipal)
 
     @GetMapping("/tokens/my")
     @Operation(
         summary = "Get user's project tokens",
         description = "Retrieves all active project tokens created by the authenticated user"
     )
-    fun getUserProjectTokens(
+    suspend fun getUserProjectTokens(
         @AuthenticationPrincipal userPrincipal: OrgoUserPrincipal
-    ): ResponseEntity<ValidResponseData<List<ProjectTokenResponseDTO>>> {
-        return projectTokenService.getUserProjectTokens(userPrincipal)
-    }
+    ): ResponseEntity<ValidResponseData<List<ProjectTokenResponseDTO>>> =
+        projectTokenService.getUserProjectTokens(userPrincipal)
 
     @DeleteMapping("/tokens/my")
     @Operation(
         summary = "Revoke all user project tokens",
         description = "Revokes all project tokens created by the authenticated user"
     )
-    fun revokeAllUserProjectTokens(
+    suspend fun revokeAllUserProjectTokens(
         @AuthenticationPrincipal userPrincipal: OrgoUserPrincipal
-    ): ResponseEntity<ValidResponseData<Nothing>> {
-        return projectTokenService.revokeAllUserProjectTokens(userPrincipal)
-    }
+    ): ResponseEntity<ValidResponseData<Nothing>> = projectTokenService.revokeAllUserProjectTokens(userPrincipal)
 }

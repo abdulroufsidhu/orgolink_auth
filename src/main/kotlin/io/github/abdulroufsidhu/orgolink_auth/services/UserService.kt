@@ -7,6 +7,8 @@ import io.github.abdulroufsidhu.orgolink_auth.model.OrgoUserPrincipal
 import io.github.abdulroufsidhu.orgolink_auth.repo.UserRepo
 import io.jsonwebtoken.ExpiredJwtException
 import jakarta.servlet.http.HttpServletRequest
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -27,9 +29,9 @@ class UserService(
     private val userDetailsService: OrgoUserDetailsService,
 ) {
 
-    fun findById(id: UUID?) = id?.let { userRep.findByIdOrNull(it) }
+    suspend fun findById(id: UUID?) = id?.let { userRep.findByIdOrNull(it) }
 
-    fun delete(
+    suspend fun delete(
         request: HttpServletRequest,
         userDetails: OrgoUserPrincipal?
     ): ResponseEntity<out ValidResponseData<Nothing>?> {
@@ -45,7 +47,7 @@ class UserService(
         val jwt = authHeader?.substring(7)
 
         val response: ResponseEntity<ValidResponseData<Nothing>> = run {
-            val isValid = tokenService.isTokenValid(jwt!!, userDetails)
+            val isValid = withContext(Dispatchers.IO) { tokenService.isTokenValid(jwt!!, userDetails) }
             if (isValid) {
                 userDetails.id?.let { userRep.deleteById(it) }
                 ResponseEntity.ok().body(
@@ -68,18 +70,19 @@ class UserService(
         return response;
     }
 
-    fun createUser(user: LoginOrCreateUserRequestDTO): ResponseEntity<ValidResponseData<String>> {
-        if (userRep.existsByUsername(user.username))
-            throw UsernameAlreadyExists("Username already exists")
-        val incommingPassword = user.password
-        val savedUser =
-            userRep.saveAndFlush(
-                user.asOrgoOrgoUser().apply { password = passwordEncoder.encode(password) }
-            )
-        return login(LoginOrCreateUserRequestDTO(user.username, incommingPassword))
-    }
+    suspend fun createUser(user: LoginOrCreateUserRequestDTO): ResponseEntity<ValidResponseData<String>> =
+        withContext(Dispatchers.IO) {
+            if (userRep.existsByUsername(user.username))
+                throw UsernameAlreadyExists("Username already exists")
+            val incommingPassword = user.password
+            val savedUser =
+                userRep.saveAndFlush(
+                    user.asOrgoOrgoUser().apply { password = passwordEncoder.encode(password) }
+                )
+            login(LoginOrCreateUserRequestDTO(user.username, incommingPassword))
+        }
 
-    fun login(requeestDto: LoginOrCreateUserRequestDTO): ResponseEntity<ValidResponseData<String>> {
+    suspend fun login(requeestDto: LoginOrCreateUserRequestDTO): ResponseEntity<ValidResponseData<String>> {
         val authentication: Authentication =
             authenticationManager.authenticate(
                 UsernamePasswordAuthenticationToken(requeestDto.username, requeestDto.password)
@@ -91,28 +94,29 @@ class UserService(
         return ResponseEntity.ok(ValidResponseData(message = "Login successful", data = token))
     }
 
-    fun logout(request: HttpServletRequest): ResponseEntity<ValidResponseData<Nothing>> {
-        val authHeader = request.getHeader("Authorization")
-        val jwt = authHeader?.substring(7)
+    suspend fun logout(request: HttpServletRequest): ResponseEntity<ValidResponseData<Nothing>> =
+        withContext(Dispatchers.IO) {
+            val authHeader = request.getHeader("Authorization")
+            val jwt = authHeader?.substring(7)
 
-        jwt?.let {
-            val username = tokenService.extractUsername(it)
-            val userDetails = userDetailsService.loadUserByUsername(username)
-            (userDetails as? OrgoUserPrincipal)?.id?.let { userId: UUID ->
-                tokenService.revokeAllUserTokens(userId)
+            jwt?.let {
+                val username = tokenService.extractUsername(it)
+                val userDetails = userDetailsService.loadUserByUsername(username)
+                (userDetails as? OrgoUserPrincipal)?.id?.let { userId: UUID ->
+                    tokenService.revokeAllUserTokens(userId)
+                }
             }
+
+            ResponseEntity.ok(
+                ValidResponseData(
+                    message = "Logged out successfully",
+                    data = null
+                )
+            )
         }
 
-        return ResponseEntity.ok(
-            ValidResponseData(
-                message = "Logged out successfully",
-                data = null
-            )
-        )
-    }
-
     @Throws(ExpiredJwtException::class)
-    fun verify(
+    suspend fun verify(
         request: HttpServletRequest,
         userDetails: UserDetails?
     ): ResponseEntity<ValidResponseData<Nothing>> {
@@ -128,7 +132,9 @@ class UserService(
         val jwt = authHeader?.substring(7)
 
         val response: ResponseEntity<ValidResponseData<Nothing>> = run {
-            val isValid = tokenService.isTokenValid(jwt!!, userDetails)
+            val isValid = withContext(Dispatchers.IO) {
+                tokenService.isTokenValid(jwt!!, userDetails)
+            }
             if (isValid) {
                 ResponseEntity.ok().body(
                     ValidResponseData(
@@ -145,9 +151,6 @@ class UserService(
                 )
             }
         }
-
-
         return response;
-
     }
 }

@@ -12,7 +12,7 @@ import java.util.UUID
 @Entity
 @Table(name = "user_access_tokens")
 class UserAccessToken(
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, columnDefinition = "TEXT")
     var token: String? = null,
 
     @Column(nullable = false)

@@ -35,7 +35,7 @@ class ProjectController(private val projectService: ProjectService) {
         summary = "Create a new project",
         description = "Creates a new project with the authenticated user as owner"
     )
-    fun createProject(
+    suspend fun createProject(
         @Valid @RequestBody requestDTO: CreateProjectRequestDTO,
         @AuthenticationPrincipal userPrincipal: OrgoUserPrincipal
     ): ResponseEntity<ValidResponseData<ProjectResponseDTO>> {
@@ -47,7 +47,7 @@ class ProjectController(private val projectService: ProjectService) {
         summary = "Get user's projects",
         description = "Retrieves all projects where the user is a member"
     )
-    fun getUserProjects(
+    suspend fun getUserProjects(
         @AuthenticationPrincipal userPrincipal: OrgoUserPrincipal
     ): ResponseEntity<ValidResponseData<List<ProjectResponseDTO>>> {
         return projectService.getUserProjects(userPrincipal)
@@ -55,7 +55,7 @@ class ProjectController(private val projectService: ProjectService) {
 
     @GetMapping("/public")
     @Operation(summary = "Get public projects", description = "Retrieves all public projects")
-    fun getPublicProjects(): ResponseEntity<ValidResponseData<List<ProjectResponseDTO>>> {
+    suspend fun getPublicProjects(): ResponseEntity<ValidResponseData<List<ProjectResponseDTO>>> {
         return projectService.getPublicProjects()
     }
 
@@ -64,7 +64,7 @@ class ProjectController(private val projectService: ProjectService) {
         summary = "Get project by key",
         description = "Retrieves a specific project by its key"
     )
-    fun getProjectByKey(
+    suspend fun getProjectByKey(
         @Parameter(description = "Project key") @PathVariable projectKey: String
     ): ResponseEntity<ValidResponseData<ProjectResponseDTO>> {
         return projectService.getProjectByKey(projectKey)
@@ -75,7 +75,7 @@ class ProjectController(private val projectService: ProjectService) {
         summary = "Update project",
         description = "Updates project details (requires OWNER or ADMIN role)"
     )
-    fun updateProject(
+    suspend fun updateProject(
         @Parameter(description = "Project key") @PathVariable projectKey: String,
         @Valid @RequestBody requestDTO: CreateProjectRequestDTO,
         @AuthenticationPrincipal userPrincipal: OrgoUserPrincipal
@@ -88,7 +88,7 @@ class ProjectController(private val projectService: ProjectService) {
         summary = "Delete project",
         description = "Soft deletes a project (requires OWNER role)"
     )
-    fun deleteProject(
+    suspend fun deleteProject(
         @Parameter(description = "Project key") @PathVariable projectKey: String,
         @AuthenticationPrincipal userPrincipal: OrgoUserPrincipal
     ): ResponseEntity<ValidResponseData<Nothing>> {
@@ -101,7 +101,7 @@ class ProjectController(private val projectService: ProjectService) {
         description =
             "Adds a user to the project with specified role (requires OWNER or ADMIN role)"
     )
-    fun addUserToProject(
+    suspend fun addUserToProject(
         @Parameter(description = "Project key") @PathVariable projectKey: String,
         @Valid @RequestBody requestDTO: AddUserToProjectRequestDTO,
         @AuthenticationPrincipal userPrincipal: OrgoUserPrincipal
@@ -114,7 +114,7 @@ class ProjectController(private val projectService: ProjectService) {
         summary = "Get project users",
         description = "Retrieves all users associated with the project"
     )
-    fun getProjectUsers(
+    suspend fun getProjectUsers(
         @Parameter(description = "Project key") @PathVariable projectKey: String,
         @AuthenticationPrincipal userPrincipal: OrgoUserPrincipal
     ): ResponseEntity<ValidResponseData<List<ProjectUserResponseDTO>>> {
@@ -126,7 +126,7 @@ class ProjectController(private val projectService: ProjectService) {
         summary = "Remove user from project",
         description = "Removes a user from the project (requires OWNER or ADMIN role)"
     )
-    fun removeUserFromProject(
+    suspend fun removeUserFromProject(
         @Parameter(description = "Project key") @PathVariable projectKey: String,
         @Parameter(description = "Username to remove") @PathVariable username: String,
         @AuthenticationPrincipal userPrincipal: OrgoUserPrincipal
@@ -141,7 +141,7 @@ class ProjectController(private val projectService: ProjectService) {
 class TestProjectController(private val projectService: ProjectService) {
 
     @DeleteMapping("/api/projects/{projectKey}/permanent")
-    fun delete(
+    suspend fun delete(
         @Parameter(description = "Project key") @PathVariable projectKey: String,
         @AuthenticationPrincipal userPrincipal: OrgoUserPrincipal
     ) = projectService.deletePermanent(projectKey, userPrincipal)

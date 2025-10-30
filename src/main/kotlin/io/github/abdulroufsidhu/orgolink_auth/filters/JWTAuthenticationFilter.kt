@@ -5,6 +5,8 @@ import io.github.abdulroufsidhu.orgolink_auth.services.OrgoUserDetailsService
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource
@@ -21,12 +23,12 @@ class JWTAuthenticationFilter(
         request: HttpServletRequest,
         response: HttpServletResponse,
         filterChain: FilterChain
-    ) {
+    ) = runBlocking {
         val authHeader = request.getHeader("Authorization")
-        
+
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response)
-            return
+            return@runBlocking
         }
 
         val jwt = authHeader.substring(7)
@@ -34,7 +36,7 @@ class JWTAuthenticationFilter(
 
         if (username != null && SecurityContextHolder.getContext().authentication == null) {
             val userDetails = userDetailsService.loadUserByUsername(username)
-            
+
             if (tokenService.isTokenValid(jwt, userDetails)) {
                 val authToken = UsernamePasswordAuthenticationToken(
                     userDetails,
@@ -45,7 +47,7 @@ class JWTAuthenticationFilter(
                 SecurityContextHolder.getContext().authentication = authToken
             }
         }
-        
+
         filterChain.doFilter(request, response)
     }
 }

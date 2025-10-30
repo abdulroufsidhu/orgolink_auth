@@ -168,7 +168,7 @@ class ProjectService(
                 )
             val savedProjectUser = projectUserRepo.save(projectUser)
             val user = savedProjectUser.userId?.let { userRepo.findById(it).orElse(null) }
-            val project = savedProjectUser.projectId?.let{ projectRepo.findById(it).orElse(null) }
+            val project = savedProjectUser.projectId?.let { projectRepo.findById(it).orElse(null) }
 
             return ResponseEntity.ok(
                 ValidResponseData(
@@ -204,8 +204,8 @@ class ProjectService(
         val projectUsers = projectUserRepo.findByProjectIdAndIsActiveTrue(project.id!!)
         val projectUserDTOs = projectUsers.map {
 
-            val user = it.userId?.let {uid-> userRepo.findById(uid).orElse(null) }
-            val project = it.projectId?.let{pid -> projectRepo.findById(pid).orElse(null) }
+            val user = it.userId?.let { uid -> userRepo.findById(uid).orElse(null) }
+            val project = it.projectId?.let { pid -> projectRepo.findById(pid).orElse(null) }
             ProjectUserResponseDTO.from(it, project, user?.username)
         }
 
@@ -233,7 +233,7 @@ class ProjectService(
                 .body(
                     ValidResponseData(
                         message =
-                        "Insufficient permissions to remove users from this project",
+                            "Insufficient permissions to remove users from this project",
                         data = null
                     )
                 )
