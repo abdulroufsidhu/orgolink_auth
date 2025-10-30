@@ -24,10 +24,10 @@ object TestUtils {
         this["Authorization"] = "Bearer $token"
     }
 
-    fun createUser(restTemplate: TestRestTemplate) : ValidResponseData<String>? {
+    fun createUser(restTemplate: TestRestTemplate, user: LoginOrCreateUserRequestDTO = userRequest) : ValidResponseData<String>? {
         val headers = HttpHeaders()
         headers.contentType = MediaType.APPLICATION_JSON
-        val request = HttpEntity(userRequest, headers)
+        val request = HttpEntity(user, headers)
 
         val response: ResponseEntity<ValidResponseData<*>> =
             restTemplate.exchange(

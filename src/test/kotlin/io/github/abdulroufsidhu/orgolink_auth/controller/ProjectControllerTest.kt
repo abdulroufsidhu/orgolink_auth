@@ -4,23 +4,29 @@ import io.github.abdulroufsidhu.orgolink_auth.TestUtils
 import io.github.abdulroufsidhu.orgolink_auth.dto.ValidResponseData
 import io.github.abdulroufsidhu.orgolink_auth.dto.requestdto.AddUserToProjectRequestDTO
 import io.github.abdulroufsidhu.orgolink_auth.dto.requestdto.CreateProjectRequestDTO
+import io.github.abdulroufsidhu.orgolink_auth.dto.requestdto.LoginOrCreateUserRequestDTO
 import io.github.abdulroufsidhu.orgolink_auth.dto.responsedto.ProjectResponseDTO
 import io.github.abdulroufsidhu.orgolink_auth.dto.responsedto.ProjectUserResponseDTO
 import io.github.abdulroufsidhu.orgolink_auth.model.ProjectRole
-import org.junit.jupiter.api.Test
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.web.client.TestRestTemplate
-import org.springframework.http.*
-import org.springframework.test.context.ActiveProfiles
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.MethodOrderer
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.web.client.TestRestTemplate
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.boot.web.client.RestTemplateBuilder
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.core.annotation.Order
+import org.springframework.http.HttpEntity
+import org.springframework.http.HttpMethod
+import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.TestPropertySource
 
 @ActiveProfiles("test")
@@ -233,8 +239,14 @@ class ProjectControllerTest {
             val testProject = createTestProject()
             val projectKey = createProjectAndReturnKey(token, testProject)
 
+            val newUsr = LoginOrCreateUserRequestDTO(
+                username = "testuser1",
+                password = "testUser1@Password"
+            );
+            val usrRequest = TestUtils.createUser(restTemplate, newUsr)
+
             val addUserRequest = AddUserToProjectRequestDTO(
-                username = "testuser",
+                username = newUsr.username,
                 role = ProjectRole.USER
             )
 
@@ -253,6 +265,8 @@ class ProjectControllerTest {
             assertNotNull(response.body?.data)
             assertEquals(addUserRequest.username, response.body?.data?.username)
             assertEquals(addUserRequest.role, response.body?.data?.role)
+
+            TestUtils.deleteUser(restTemplate, usrRequest?.data ?: "")
         }
     }
 
@@ -370,7 +384,7 @@ class ProjectControllerTest {
     @Test
     @Order(11)
     fun `should fail to get project with non-existent key`() {
-        TestUtils.authenticatedTest(restTemplate) {token ->
+        TestUtils.authenticatedTest(restTemplate) { token ->
             val headers = TestUtils.getAuthHeader(token)
             val request = HttpEntity(null, headers)
 

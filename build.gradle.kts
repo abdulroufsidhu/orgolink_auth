@@ -60,5 +60,5 @@ tasks.test {
 
 
 tasks.named("bootRun") {
-    // dependsOn("test")
+     dependsOn("test")
 }
