@@ -11,7 +11,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-scripts:/docker-entrypoint-initdb.d
+      - ./init-scripts:/docker-entrypoint-initdb.d:Z
     networks:
       - orgolink-network
     healthcheck:
@@ -27,7 +27,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=dev
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/orgolink_auth
       - SPRING_DATASOURCE_USERNAME=orgolink
       - SPRING_DATASOURCE_PASSWORD=orgolink123

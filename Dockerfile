@@ -1,4 +1,4 @@
-FROM openjdk:21-jdk-slim
+FROM eclipse-temurin:21
 
 LABEL maintainer="Abdul Rouf Sidhu <abdulroufsidhu@gmail.com>"
 LABEL description="Orgolink Authentication Service"
