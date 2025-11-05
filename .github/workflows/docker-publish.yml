@@ -59,7 +59,7 @@ jobs:
           docker ps
           echo "🔍 Checking app health endpoint..."
           curl -f http://localhost:8080/public/health || (docker compose logs app && exit 1)
-          docker compose down
+          docker-compose down
 
       # 🏷️ Tag & Push the app image
       - name: Push app image to GHCR

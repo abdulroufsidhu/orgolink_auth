@@ -1,7 +1,9 @@
+version: "3.8"
+
 services:
-  postgres-dev:
+  postgres:
     image: postgres:15-alpine
-    container_name: orgolink-auth-postgres-dev
+    container_name: orgolink-auth-postgres
     environment:
       POSTGRES_DB: orgolink_auth
       POSTGRES_USER: orgolink
@@ -9,54 +11,66 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_dev_data:/var/lib/postgresql/data
-      - ./init-scripts:/docker-entrypoint-initdb.d:Z
+      - postgres_data:/var/lib/postgresql/data
     networks:
-      - orgolink-dev-network
+      - orgolink-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U orgolink -d orgolink_auth"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-  redis-dev:
+  redis:
     image: redis:7-alpine
-    container_name: orgolink-auth-redis-dev
+    container_name: orgolink-auth-redis
     ports:
       - "6379:6379"
     volumes:
-      - redis_dev_data:/data
+      - redis_data:/data
     networks:
-      - orgolink-dev-network
+      - orgolink-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 30s
+      timeout: 10s
+      retries: 3
     restart: unless-stopped
 
-  # Optional: pgAdmin for database management in development
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: orgolink-auth-pgadmin-dev
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@orgolink.dev
-      PGADMIN_DEFAULT_PASSWORD: admin123
-    ports:
-      - "5050:80"
+  orgolink-auth:
+    image: ghcr.io/abdulroufsidhu/orgolink_auth:latest
+    container_name: orgolink-auth-service
     depends_on:
-      - postgres-dev
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/orgolink_auth
+      - SPRING_DATASOURCE_USERNAME=orgolink
+      - SPRING_DATASOURCE_PASSWORD=orgolink123
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - JWT_SECRET=404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+      - JWT_EXPIRATION=86400000
+    ports:
+      - "8080:8080"
     networks:
-      - orgolink-dev-network
+      - orgolink-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/public/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     restart: unless-stopped
 
 volumes:
-  postgres_dev_data:
+  postgres_data:
     driver: local
-  redis_dev_data:
+  redis_data:
     driver: local
 
 networks:
-  orgolink-dev-network:
+  orgolink-network:
     driver: bridge
