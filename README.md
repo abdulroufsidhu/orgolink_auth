@@ -1,6 +1,7 @@
 # Orgolink Authentication Service
 
 A comprehensive authentication and authorization microservice built with Spring Boot and Kotlin. This service provides JWT-based authentication, project management, and role-based access control with project-specific access tokens.
+[System Design](./system_design.md)
 
 ## Features
 
@@ -23,6 +24,10 @@ A comprehensive authentication and authorization microservice built with Spring 
 - **Gradle** - Build tool
 
 ## Getting Started
+### Docker Compose
+```bash
+curl -O https://raw.githubusercontent.com/abdulroufsidhu/orgolink_auth/refs/heads/master/docker-compose.dev.yml && docker compose -f docker-compose.dev.yml up -d
+```
 
 ### Prerequisites
 

@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21
+FROM eclipse-temurin:21-alpine
 
 LABEL maintainer="Abdul Rouf Sidhu <abdulroufsidhu@gmail.com>"
 LABEL description="Orgolink Authentication Service"
@@ -6,7 +6,7 @@ LABEL description="Orgolink Authentication Service"
 # Set working directory
 WORKDIR /app
 
-# Copy gradle wrapper and build files
+# Copy Gradle wrapper and build files
 COPY gradle gradle
 COPY gradlew .
 COPY build.gradle.kts .
@@ -20,6 +20,9 @@ RUN chmod +x gradlew
 
 # Build the application
 RUN ./gradlew bootJar --no-daemon
+
+# Install tools for user management and cleanup
+RUN apk add --no-cache shadow curl
 
 # Create non-root user
 RUN groupadd -r orgolink && useradd -r -g orgolink orgolink

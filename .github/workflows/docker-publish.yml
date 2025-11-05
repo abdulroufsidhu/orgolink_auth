@@ -40,7 +40,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 🧩 Create env file for compose
       - name: Prepare environment
         run: |
           echo "POSTGRES_DB=orgolink_auth" >> .env
@@ -50,31 +49,26 @@ jobs:
           echo "SPRING_DATASOURCE_USERNAME=orgolink" >> .env
           echo "SPRING_DATASOURCE_PASSWORD=orgolink123" >> .env
 
-      # 🏗️ Build and verify using docker compose
-      - name: Build & test with docker compose
-        run: |
-          docker compose up -d --build
-          echo "⏳ Waiting for app to start..."
-          sleep 30
-          docker ps
-          echo "🔍 Checking app health endpoint..."
-          curl -f http://localhost:8080/public/health || (docker compose logs app && exit 1)
-          docker compose down
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5 # v5.0.0
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
-      # 🏷️ Tag & Push the app image
-      - name: Push app image to GHCR
-        if: github.event_name != 'pull_request'
-        run: |
-          APP_IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/orgolink-auth:latest
-          docker tag orgolink-auth-app $APP_IMAGE_NAME
-          docker push $APP_IMAGE_NAME
-          echo "✅ Published $APP_IMAGE_NAME"
+      - name: Build and push Docker image
+        id: build-and-push
+        uses: docker/build-push-action@v5 # v5.0.0
+        with:
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      # 🔏 Optional: Sign image
-      - name: Sign published image
-        if: github.event_name != 'pull_request'
+      - name: Sign the published Docker image
+        if: ${{ github.event_name != 'pull_request' }}
         env:
-          APP_IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/orgolink-auth:latest
-        run: |
-          echo "🔏 Signing image..."
-          cosign sign --yes $APP_IMAGE_NAME
+          TAGS: ${{ steps.meta.outputs.tags }}
+          DIGEST: ${{ steps.build-and-push.outputs.digest }}
+        run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
