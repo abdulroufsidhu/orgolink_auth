@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21
+FROM eclipse-temurin:21-alpine
 
 LABEL maintainer="Abdul Rouf Sidhu <abdulroufsidhu@gmail.com>"
 LABEL description="Orgolink Authentication Service"
