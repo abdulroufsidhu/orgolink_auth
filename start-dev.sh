@@ -46,3 +46,4 @@ echo ""
 echo "🛑 To stop the development environment:"
 echo "   docker-compose -f docker-compose.dev.yml down"
 echo ""
+
