@@ -37,7 +37,7 @@ services:
     restart: unless-stopped
 
   orgolink-auth:
-    image: ghcr.io/abdulroufsidhu/orgolink_auth:latest
+    image: ghcr.io/abdulroufsidhu/orgolink_auth:master
     container_name: orgolink-auth-service
     depends_on:
       postgres:
