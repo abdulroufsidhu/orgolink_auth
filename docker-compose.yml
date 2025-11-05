@@ -45,21 +45,6 @@ services:
       start_period: 60s
     restart: unless-stopped
 
-  nginx:
-    image: nginx:alpine
-    container_name: orgolink-auth-nginx
-    depends_on:
-      - orgolink-auth
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./nginx/ssl:/etc/nginx/ssl
-    networks:
-      - orgolink-network
-    restart: unless-stopped
-
   redis:
     image: redis:7-alpine
     container_name: orgolink-auth-redis
