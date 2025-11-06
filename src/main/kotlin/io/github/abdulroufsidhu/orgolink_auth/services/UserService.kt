@@ -32,10 +32,9 @@ class UserService(
     suspend fun findById(id: UUID?) = id?.let { userRep.findByIdOrNull(it) }
 
     suspend fun delete(
-        request: HttpServletRequest,
         userDetails: OrgoUserPrincipal?
     ): ResponseEntity<out ValidResponseData<Nothing>?> {
-        if (userDetails == null)
+        if (userDetails == null || userDetails.id == null)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
                 ValidResponseData(
                     message = "Invalid Token",
@@ -43,29 +42,13 @@ class UserService(
                 ),
             )
 
-        val authHeader = request.getHeader("Authorization")
-        val jwt = authHeader?.substring(7)
-
-        val response: ResponseEntity<ValidResponseData<Nothing>> = run {
-            val isValid = withContext(Dispatchers.IO) { tokenService.isTokenValid(jwt!!, userDetails) }
-            if (isValid) {
-                userDetails.id?.let { userRep.deleteById(it) }
-                ResponseEntity.ok().body(
-                    ValidResponseData(
-                        message = "User deleted successfully",
-                        data = null
-                    )
-                )
-            } else {
-                ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
-                    ValidResponseData(
-                        message = "Invalid Token",
-                        data = null
-                    )
-                )
-            }
-        }
-
+        userRep.deleteById(userDetails.id)
+        val response: ResponseEntity<ValidResponseData<Nothing>> = ResponseEntity.ok().body(
+            ValidResponseData(
+                message = "User deleted successfully",
+                data = null
+            )
+        )
 
         return response;
     }
@@ -95,25 +78,21 @@ class UserService(
         return ResponseEntity.ok(ValidResponseData(message = "Login successful", data = token))
     }
 
-    suspend fun logout(request: HttpServletRequest): ResponseEntity<ValidResponseData<Nothing>> =
+    @Throws(Exception::class)
+    suspend fun logout(userDetails: OrgoUserPrincipal?): ResponseEntity<ValidResponseData<Nothing>> =
         withContext(Dispatchers.IO) {
-            val authHeader = request.getHeader("Authorization")
-            val jwt = authHeader?.substring(7)
 
-            jwt?.let {
-                val username = tokenService.extractUsername(it)
-                val userDetails = userDetailsService.loadUserByUsername(username)
-                (userDetails as? OrgoUserPrincipal)?.id?.let { userId: UUID ->
-                    tokenService.revokeAllUserTokens(userId)
-                }
-            }
-
-            ResponseEntity.ok(
-                ValidResponseData(
-                    message = "Logged out successfully",
-                    data = null
+            return@withContext userDetails?.id?.let { userId: UUID ->
+                tokenService.revokeAllUserTokens(userId)
+                ResponseEntity.ok(
+                    ValidResponseData(
+                        message = "Logged out successfully",
+                        data = null
+                    )
                 )
-            )
+            } ?: throw Exception("Invalid Token")
+
+
         }
 
     @Throws(ExpiredJwtException::class)

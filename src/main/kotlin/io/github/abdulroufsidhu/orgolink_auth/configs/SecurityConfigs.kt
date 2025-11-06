@@ -14,49 +14,67 @@ import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import org.springframework.web.cors.CorsConfiguration
+import org.springframework.web.cors.CorsConfigurationSource
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource
+
 
 @Configuration
 @EnableWebSecurity
 class SecurityConfigs(
-        private val jwtAuthFilter: JWTAuthenticationFilter,
-        private val projectTokenAuthFilter: ProjectTokenAuthenticationFilter
+    private val jwtAuthFilter: JWTAuthenticationFilter,
+    private val projectTokenAuthFilter: ProjectTokenAuthenticationFilter
 ) {
 
-  @Bean
-  @Throws(Exception::class)
-  fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
-    http
+    @Bean
+    @Throws(Exception::class)
+    fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
+        http
             .csrf { customizer -> customizer.disable() }
+            .cors {}
             .authorizeHttpRequests { requests ->
-              requests.requestMatchers(
-                              "/public/**",
-                              "/auth/**",
-                              "/register",
-                              "/api/projects/public"
-                      )
-                      .permitAll()
-                      .anyRequest()
-                      .authenticated()
+                requests.requestMatchers(
+                    "/public/**",
+                    "/api/auth/**",
+                    "/api/projects/public"
+                )
+                    .permitAll()
+                    .anyRequest()
+                    .authenticated()
             }
             .sessionManagement { customizer ->
-              customizer.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                customizer.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             }
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter::class.java)
             .addFilterBefore(projectTokenAuthFilter, JWTAuthenticationFilter::class.java)
 
-    return http.build()
-  }
+        return http.build()
+    }
 
-  @Bean
-  fun authenticationManager(authConfig: AuthenticationConfiguration) =
-          authConfig.authenticationManager
+    @Bean
+    fun authenticationManager(authConfig: AuthenticationConfiguration) =
+        authConfig.authenticationManager
 
-  @Bean
-  fun authenticationProvider(userDetailsService: UserDetailsService): AuthenticationProvider {
-    val provider = DaoAuthenticationProvider(userDetailsService)
-    provider.setPasswordEncoder(passwordEncoder())
-    return provider
-  }
+    @Bean
+    fun authenticationProvider(userDetailsService: UserDetailsService): AuthenticationProvider {
+        val provider = DaoAuthenticationProvider(userDetailsService)
+        provider.setPasswordEncoder(passwordEncoder())
+        return provider
+    }
 
-  @Bean fun passwordEncoder() = BCryptPasswordEncoder(12)
+    @Bean
+    fun corsConfigurationSource(): CorsConfigurationSource {
+        val config = CorsConfiguration()
+        config.setAllowedOriginPatterns(mutableListOf("http://localhost:*", "http://127.0.0.1:*"))
+        config.setAllowedMethods(mutableListOf<String?>("GET","POST","PUT", "PATCH", "DELETE"))
+        config.setAllowedHeaders(mutableListOf<String?>("*"))
+        config.setAllowCredentials(true)
+
+        val source: UrlBasedCorsConfigurationSource = UrlBasedCorsConfigurationSource()
+        source.registerCorsConfiguration("/**", config)
+        return source
+    }
+
+    @Bean
+    fun passwordEncoder() = BCryptPasswordEncoder(12)
 }

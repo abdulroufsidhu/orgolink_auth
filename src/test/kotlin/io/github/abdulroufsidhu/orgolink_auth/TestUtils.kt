@@ -31,7 +31,7 @@ object TestUtils {
 
         val response: ResponseEntity<ValidResponseData<*>> =
             restTemplate.exchange(
-                 "/auth/register",
+                 "/api/auth/register",
                 HttpMethod.POST,
                 request,
                 object : ParameterizedTypeReference<ValidResponseData<*>>() {}
@@ -48,7 +48,7 @@ object TestUtils {
 
         val response: ResponseEntity<ValidResponseData<*>> =
             restTemplate.exchange(
-                "/auth/delete",
+                "/api/auth/delete",
                 HttpMethod.DELETE,
                 request,
                 object : ParameterizedTypeReference<ValidResponseData<*>>() {}

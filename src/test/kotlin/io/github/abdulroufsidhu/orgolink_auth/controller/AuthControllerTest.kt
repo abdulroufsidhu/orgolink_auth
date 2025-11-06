@@ -58,7 +58,7 @@ class AuthControllerTest(
 
             val response: ResponseEntity<ValidResponseData<Nothing>> =
                 restTemplate.exchange(
-                    "/auth/verify",
+                    "/api/auth/verify",
                     HttpMethod.GET,
                     request,
                     object : ParameterizedTypeReference<ValidResponseData<Nothing>>() {}
@@ -100,7 +100,7 @@ class AuthControllerTest(
 
             val response: ResponseEntity<String> =
                 restTemplate.exchange(
-                    "/",
+                    "/api/",
                     HttpMethod.GET,
                     request,
                     String::class.java
