@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import kotlinx.coroutines.runBlocking
 import org.springframework.context.annotation.Profile
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -31,7 +32,7 @@ import org.springframework.web.bind.annotation.RestController
 @SecurityRequirement(name = "bearerAuth")
 class ProjectController(private val projectService: ProjectService) {
 
-    @PostMapping
+    @PostMapping(consumes = [MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_PLAIN_VALUE])
     @Operation(
         summary = "Create a new project",
         description = "Creates a new project with the authenticated user as owner"
@@ -43,7 +44,7 @@ class ProjectController(private val projectService: ProjectService) {
         projectService.createProject(requestDTO, userPrincipal)
     }
 
-    @GetMapping
+    @GetMapping()
     @Operation(
         summary = "Get user's projects",
         description = "Retrieves all projects where the user is a member"
@@ -71,7 +72,7 @@ class ProjectController(private val projectService: ProjectService) {
          projectService.getProjectByKey(projectKey)
     }
 
-    @PutMapping("/{projectKey}")
+    @PutMapping("/{projectKey}",consumes = [MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_PLAIN_VALUE])
     @Operation(
         summary = "Update project",
         description = "Updates project details (requires OWNER or ADMIN role)"
@@ -96,7 +97,7 @@ class ProjectController(private val projectService: ProjectService) {
          projectService.deleteProject(projectKey, userPrincipal)
     }
 
-    @PostMapping("/{projectKey}/users")
+    @PostMapping("/{projectKey}/users",consumes = [MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_PLAIN_VALUE])
     @Operation(
         summary = "Add user to project",
         description =

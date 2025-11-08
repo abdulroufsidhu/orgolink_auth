@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import kotlinx.coroutines.runBlocking
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -28,7 +29,10 @@ import java.util.UUID
 @SecurityRequirement(name = "bearerAuth")
 class ProjectTokenController(private val projectTokenService: ProjectTokenService) {
 
-    @PostMapping("/{projectKey}/tokens")
+    @PostMapping(
+        "/{projectKey}/tokens",
+        consumes = [MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_PLAIN_VALUE]
+    )
     @Operation(
         summary = "Generate project access token",
         description =

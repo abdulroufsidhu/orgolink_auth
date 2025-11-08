@@ -26,7 +26,7 @@ A comprehensive authentication and authorization microservice built with Spring 
 ## Getting Started
 ### Docker Compose
 ```bash
-curl -O https://raw.githubusercontent.com/abdulroufsidhu/orgolink_auth/refs/heads/master/docker-compose.dev.yml && docker compose -f docker-compose.dev.yml up -d
+curl -O https://raw.githubusercontent.com/abdulroufsidhu/orgolink_auth/refs/heads/master/docker-compose.dev.yml && docker compose -f docker-compose.dev.yml up -d && echo "service running at http://localhost:2884/ \n swagger available at http://localhost:2884/public/swagger-ui/index.html"
 ```
 
 ### Prerequisites
