@@ -32,7 +32,6 @@ class AuthController(private val userService: UserService) {
 
     @PostMapping(
         "/auth/register",
-        consumes = [MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_PLAIN_VALUE]
     )
     @Operation(summary = "Register new user")
     fun register(@Valid @RequestBody user: LoginOrCreateUserRequestDTO) =
@@ -40,7 +39,6 @@ class AuthController(private val userService: UserService) {
 
     @PostMapping(
         "/auth/login",
-        consumes = [MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_PLAIN_VALUE]
     )
     @Operation(summary = "Login to get JWT token", security = [])
     fun login(

@@ -31,7 +31,6 @@ class ProjectTokenController(private val projectTokenService: ProjectTokenServic
 
     @PostMapping(
         "/{projectKey}/tokens",
-        consumes = [MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_PLAIN_VALUE]
     )
     @Operation(
         summary = "Generate project access token",
