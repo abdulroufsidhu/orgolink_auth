@@ -61,7 +61,6 @@ class PublicApiController(
 
     @PostMapping(
         "/projects/{projectKey}/validate-token",
-        consumes = [MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_PLAIN_VALUE]
     )
     @Operation(
         summary = "Validate project access token",

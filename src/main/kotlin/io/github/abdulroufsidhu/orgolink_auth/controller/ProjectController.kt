@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RestController
 @SecurityRequirement(name = "bearerAuth")
 class ProjectController(private val projectService: ProjectService) {
 
-    @PostMapping(consumes = [MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_PLAIN_VALUE])
+    @PostMapping()
     @Operation(
         summary = "Create a new project",
         description = "Creates a new project with the authenticated user as owner"
@@ -72,7 +72,7 @@ class ProjectController(private val projectService: ProjectService) {
          projectService.getProjectByKey(projectKey)
     }
 
-    @PutMapping("/{projectKey}",consumes = [MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_PLAIN_VALUE])
+    @PutMapping("/{projectKey}")
     @Operation(
         summary = "Update project",
         description = "Updates project details (requires OWNER or ADMIN role)"
@@ -97,7 +97,7 @@ class ProjectController(private val projectService: ProjectService) {
          projectService.deleteProject(projectKey, userPrincipal)
     }
 
-    @PostMapping("/{projectKey}/users",consumes = [MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_PLAIN_VALUE])
+    @PostMapping("/{projectKey}/users")
     @Operation(
         summary = "Add user to project",
         description =
