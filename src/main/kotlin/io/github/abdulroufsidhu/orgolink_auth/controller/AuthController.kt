@@ -10,9 +10,9 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import kotlinx.coroutines.runBlocking
 import org.springframework.context.annotation.Profile
-import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -57,7 +57,7 @@ class AuthController(private val userService: UserService) {
     fun verify(
         request: HttpServletRequest,
         @AuthenticationPrincipal userDetails: OrgoUserPrincipal?
-    ): ResponseEntity<ValidResponseData<Nothing>> =
+    ): ResponseEntity<out ValidResponseData<out UserDetails>?> =
         runBlocking { userService.verify(request, userDetails) }
 
 }
@@ -69,5 +69,5 @@ class TestAuthController(private val userService: UserService) {
     @DeleteMapping("/api/auth/delete")
     fun delete(
         @AuthenticationPrincipal userDetails: OrgoUserPrincipal?
-    ) = runBlocking { userService.delete( userDetails) }
+    ) = runBlocking { userService.delete(userDetails) }
 }
