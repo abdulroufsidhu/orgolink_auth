@@ -99,7 +99,7 @@ class UserService(
     suspend fun verify(
         request: HttpServletRequest,
         userDetails: UserDetails?
-    ): ResponseEntity<ValidResponseData<Nothing>> {
+    ): ResponseEntity<out ValidResponseData<out UserDetails>?> {
         if (userDetails == null)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
                 ValidResponseData(
@@ -107,30 +107,12 @@ class UserService(
                     data = null
                 ),
             )
-
-        val authHeader = request.getHeader("Authorization")
-        val jwt = authHeader?.substring(7)
-
-        val response: ResponseEntity<ValidResponseData<Nothing>> = run {
-            val isValid = withContext(Dispatchers.IO) {
-                tokenService.isTokenValid(jwt!!, userDetails)
-            }
-            if (isValid) {
-                ResponseEntity.ok().body(
-                    ValidResponseData(
-                        message = "Token is valid",
-                        data = null
-                    )
-                )
-            } else {
-                ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
-                    ValidResponseData(
-                        message = "Invalid Token",
-                        data = null
-                    )
-                )
-            }
-        }
+        val response = ResponseEntity.accepted().body(
+            ValidResponseData(
+                message = "Verified",
+                data = userDetails
+            )
+        )
         return response;
     }
 }
