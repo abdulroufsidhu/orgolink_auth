@@ -277,8 +277,6 @@ export ORGOLINK_AUTH_DELETE_SCHEME=soft
 
 ## License
 
-This project is proprietary and confidential.
+This project is under GPL 2.0 license.
 
-## Support
 
-For issues or questions, please contact the development team.
