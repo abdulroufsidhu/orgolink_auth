@@ -1,0 +1,63 @@
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: orgolink-postgres
+    environment:
+      POSTGRES_DB: orgolink_auth
+      POSTGRES_USER: orgolink
+      POSTGRES_PASSWORD: orgolink_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orgolink"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - orgolink-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: orgolink-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - orgolink-network
+
+  app:
+    build: .
+    container_name: orgolink-auth-app
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/orgolink_auth
+      SPRING_DATASOURCE_USERNAME: orgolink
+      SPRING_DATASOURCE_PASSWORD: orgolink_pass
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      ORGOLINK_AUTH_JWT_SECRET: ${ORGOLINK_AUTH_JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production-min-256-bits}
+    ports:
+      - "2884:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - orgolink-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  orgolink-network:
+    driver: bridge

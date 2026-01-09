@@ -1,0 +1,90 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  profiles:
+    active:
+      - test
+
+  application:
+    name: orgolink-auth
+  
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/orgolink_auth}
+    username: ${SPRING_DATASOURCE_USERNAME:orgolink}
+    password: ${SPRING_DATASOURCE_PASSWORD:orgolink_pass}
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+  
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    
+  redis:
+    host: ${SPRING_REDIS_HOST:localhost}
+    port: ${SPRING_REDIS_PORT:6379}
+    timeout: 60000ms
+    
+  thymeleaf:
+    cache: false
+    prefix: classpath:/templates/
+    suffix: .html
+
+# Custom OrgoLink Auth Configuration
+orgolink:
+  auth:
+    # JWT Configuration
+    jwt:
+      secret: ${ORGOLINK_AUTH_JWT_SECRET:default-secret-key-change-this-in-production-minimum-256-bits-required}
+      expiration-ms: 86400000  # 24 hours in milliseconds
+    
+    # Delete Scheme: soft or hard
+    delete-scheme: ${ORGOLINK_AUTH_DELETE_SCHEME:soft}
+    
+    # Password Reset Timeout (in milliseconds)
+    pass-reset-timeout: ${ORGOLINK_AUTH_PASS_RESET_TIMEOUT:3600000}  # 1 hour
+    
+    # Roles and Permissions Configuration
+    roles:
+      - name: ADMIN
+        permissions:
+          - USER_READ
+          - USER_WRITE
+          - USER_DELETE
+          - USER_CREATE
+          - ROLE_MANAGE
+          - PERMISSION_MANAGE
+          - SYSTEM_CONFIG
+      
+      - name: MANAGER
+        permissions:
+          - USER_READ
+          - USER_WRITE
+          - USER_CREATE
+          - ROLE_MANAGE
+      
+      - name: USER
+        permissions:
+          - USER_READ
+          - PROFILE_UPDATE
+      
+      - name: GUEST
+        permissions:
+          - USER_READ
+
+logging:
+  level:
+    com.orgolink.auth: INFO
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG

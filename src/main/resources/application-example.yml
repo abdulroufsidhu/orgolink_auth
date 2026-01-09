@@ -1,0 +1,155 @@
+# EXAMPLE CONFIGURATION FILE FOR ORGOLINK AUTH MICROSERVICE
+# Copy this file to application.yml and update the values according to your environment
+# For production, use environment variables instead of hardcoding sensitive values
+
+server:
+  port: 8080  # Application server port
+  servlet:
+    context-path: /  # Application context path
+
+spring:
+  application:
+    name: orgolink-auth
+  
+  # PostgreSQL Database Configuration
+  datasource:
+    # Database connection URL
+    # Format: jdbc:postgresql://<host>:<port>/<database_name>
+    url: jdbc:postgresql://localhost:5432/orgolink_auth
+    
+    # Database username
+    username: orgolink
+    
+    # Database password (use environment variable in production)
+    password: orgolink_pass
+    
+    driver-class-name: org.postgresql.Driver
+  
+  # JPA/Hibernate Configuration
+  jpa:
+    hibernate:
+      ddl-auto: validate  # validate, update, create, create-drop
+    show-sql: false  # Set to true for debugging SQL queries
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+  
+  # Flyway Migration Configuration
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    
+  # Redis Configuration for Token Caching
+  redis:
+    host: localhost  # Redis server host
+    port: 6379       # Redis server port
+    timeout: 60000ms # Connection timeout
+    
+  # Thymeleaf Template Engine Configuration
+  thymeleaf:
+    cache: false  # Set to true in production for better performance
+    prefix: classpath:/templates/
+    suffix: .html
+
+# ============================================================================
+# ORGOLINK AUTH CUSTOM CONFIGURATION
+# ============================================================================
+
+orgolink:
+  auth:
+    # ------------------------------------------------------------------------
+    # JWT Configuration
+    # ------------------------------------------------------------------------
+    jwt:
+      # IMPORTANT: Change this secret in production!
+      # Minimum 256 bits (32 characters) required for HS256 algorithm
+      # Best practice: Use environment variable ORGOLINK_AUTH_JWT_SECRET
+      secret: your-super-secret-jwt-key-change-this-in-production-minimum-256-bits-required
+      
+      # Token expiration time in milliseconds
+      # 86400000 ms = 24 hours
+      # 3600000 ms = 1 hour
+      # 604800000 ms = 7 days
+      expiration-ms: 86400000
+    
+    # ------------------------------------------------------------------------
+    # User Deletion Scheme
+    # ------------------------------------------------------------------------
+    # Options: "soft" or "hard"
+    # - soft: Mark users as deleted but retain data (recommended)
+    # - hard: Permanently remove user data from database
+    # Use environment variable: ORGOLINK_AUTH_DELETE_SCHEME
+    delete-scheme: soft
+    
+    # ------------------------------------------------------------------------
+    # Password Reset Configuration
+    # ------------------------------------------------------------------------
+    # Password reset link timeout in milliseconds
+    # 3600000 ms = 1 hour (default)
+    # 1800000 ms = 30 minutes
+    # Use environment variable: ORGOLINK_AUTH_PASS_RESET_TIMEOUT
+    pass-reset-timeout: 3600000
+    
+    # ------------------------------------------------------------------------
+    # Roles and Permissions Configuration
+    # ------------------------------------------------------------------------
+    # Define application roles and their associated permissions
+    # Each role can have multiple permissions
+    # Permissions are checked at the API level for authorization
+    
+    roles:
+      # Administrator - Full system access
+      - name: ADMIN
+        permissions:
+          - USER_READ       # View user information
+          - USER_WRITE      # Update user information
+          - USER_DELETE     # Delete users
+          - USER_CREATE     # Create new users
+          - ROLE_MANAGE     # Manage roles
+          - PERMISSION_MANAGE  # Manage permissions
+          - SYSTEM_CONFIG   # Configure system settings
+      
+      # Manager - User management capabilities
+      - name: MANAGER
+        permissions:
+          - USER_READ
+          - USER_WRITE
+          - USER_CREATE
+          - ROLE_MANAGE
+      
+      # Regular User - Basic access
+      - name: USER
+        permissions:
+          - USER_READ       # Can read their own profile
+          - PROFILE_UPDATE  # Can update their own profile
+      
+      # Guest - Read-only access
+      - name: GUEST
+        permissions:
+          - USER_READ
+
+# ============================================================================
+# LOGGING CONFIGURATION
+# ============================================================================
+logging:
+  level:
+    com.orgolink.auth: INFO
+    org.springframework.security: INFO  # Set to DEBUG for security troubleshooting
+    org.hibernate.SQL: INFO             # Set to DEBUG to see SQL queries
+    org.hibernate.type.descriptor.sql.BasicBinder: INFO  # Set to TRACE to see query parameters
+
+# ============================================================================
+# ENVIRONMENT VARIABLES (For Production)
+# ============================================================================
+# Set these environment variables in your production environment:
+#
+# SPRING_DATASOURCE_URL=jdbc:postgresql://db-host:5432/orgolink_auth
+# SPRING_DATASOURCE_USERNAME=your_db_user
+# SPRING_DATASOURCE_PASSWORD=your_db_password
+# SPRING_REDIS_HOST=redis-host
+# SPRING_REDIS_PORT=6379
+# ORGOLINK_AUTH_JWT_SECRET=your-production-jwt-secret-min-256-bits
+# ORGOLINK_AUTH_DELETE_SCHEME=soft
+# ORGOLINK_AUTH_PASS_RESET_TIMEOUT=3600000

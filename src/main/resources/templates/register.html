@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - OrgoLink Auth</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        p {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .links {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .links a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .links a:hover {
+            text-decoration: underline;
+        }
+
+        .error {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .success {
+            background: #efe;
+            border: 1px solid #cfc;
+            color: #3c3;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Create Account</h1>
+        <p>Join OrgoLink today</p>
+
+        <div id="message"></div>
+
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required minlength="6">
+            </div>
+
+            <div class="form-group">
+                <label for="confirmPassword">Confirm Password</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required minlength="6">
+            </div>
+
+            <button type="submit">Create Account</button>
+        </form>
+
+        <div class="links">
+            Already have an account? <a href="/login">Sign In</a>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const messageDiv = document.getElementById('message');
+
+            if (password !== confirmPassword) {
+                messageDiv.innerHTML = '<div class="error">Passwords do not match!</div>';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, email, password })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    messageDiv.innerHTML = '<div class="success">' + data.message + '</div>';
+                    localStorage.setItem('token', data.data.token);
+                    localStorage.setItem('user', JSON.stringify(data.data.user));
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 1500);
+                } else {
+                    messageDiv.innerHTML = '<div class="error">' + data.message + '</div>';
+                }
+            } catch (error) {
+                messageDiv.innerHTML = '<div class="error">An error occurred. Please try again.</div>';
+            }
+        });
+    </script>
+</body>
+
+</html>
